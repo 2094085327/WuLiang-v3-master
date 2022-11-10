@@ -1,6 +1,7 @@
-package pers.wuLiang.robot
+package pers.wuliang.robot
 
 import love.forte.simboot.spring.autoconfigure.EnableSimbot
+import org.mybatis.spring.annotation.MapperScan
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 

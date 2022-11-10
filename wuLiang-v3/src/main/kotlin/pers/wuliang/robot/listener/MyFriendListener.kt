@@ -4,12 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import love.forte.simboot.annotation.Filter
 import love.forte.simboot.annotation.Listener
 import love.forte.simboot.filter.MatchType
-import love.forte.simbot.Api4J
-import love.forte.simbot.event.GroupMessageEvent
 import love.forte.simbot.event.MessageEvent
-import love.forte.simbot.message.Message
 import org.springframework.stereotype.Component
-import pers.wuLiang.robot.core.annotation.RobotListen
 import pers.wuLiang.robot.core.common.Constant
 import pers.wuLiang.robot.core.common.send
 import java.io.File
@@ -17,37 +13,11 @@ import java.io.File
 
 val objectMapper = ObjectMapper()
 
-data class Data(
-    var groupId: String,
-    var groupName: String,
-    var content: Message,
-    var sendUserCode: String,
-    var sendUserName: String,
-    var time: Long,
-)
-
 @Component
-//@Beans
 class GroupListener {
-    @OptIn(Api4J::class)
-    @RobotListen(desc = "群组消息监听")
-    suspend fun GroupMessageEvent.allEventListen() {
-        val data = Data(
-            groupId = group.id.toString(),
-            groupName = group.name,
-            content = messageContent.messages,
-            sendUserCode = author().id.toString(),
-            sendUserName = author().nickOrUsername,
-            time = System.currentTimeMillis(),
-        )
-        val json1 = objectMapper.writeValueAsString(data)
-        println(json1)
-    }
-
-
     // TODO 涩图抽卡功能
     /**
-     * 抽奖
+     * 帮助
      * @receiver GroupMessageEvent
      */
     @Listener
