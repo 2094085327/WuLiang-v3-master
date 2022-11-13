@@ -8,6 +8,9 @@ mlyaiuse:
   apikey: nv7f9p305nkuxhls
   apisecret: 95c83lzt
 
+weather:
+  key: 1b48b4a69c8a4f7cb17674cbf4cea29b
+
 server:
   port: 9898
 

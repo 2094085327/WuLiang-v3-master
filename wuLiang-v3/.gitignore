@@ -36,3 +36,4 @@ build/
 /cache/
 *-*.yml
 /music/
+/src/main/resources/META-INF/
