@@ -2,6 +2,7 @@ package pers.wuliang.robot.botApi.geographyApi
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.stereotype.Component
 import pers.wuliang.robot.util.HttpUtil
 
 var objectMapper = ObjectMapper()
@@ -45,8 +46,11 @@ object Prediction {
     var errorMsg: String? = null
 }
 
+@Component
 class GeoApi {
-    private val key = "1b48b4a69c8a4f7cb17674cbf4cea29b"
+
+    var key: String? = GeoConfig.key
+
     fun getCityData(city: String) {
         val url = "https://geoapi.qweather.com/v2/city/lookup?location=$city&key=${key}"
         try {
@@ -69,7 +73,6 @@ class GeoApi {
         val url = "https://devapi.qweather.com/v7/weather/now?location=${
             City.jsonNode?.get("id")?.textValue()
         }&key=${key}"
-        println(url)
         try {
             val json = objectMapper.readTree(HttpUtil.get(url).response)
             Weather.code = json["code"].textValue()
@@ -93,8 +96,14 @@ class GeoApi {
             val json = objectMapper.readTree(HttpUtil.get(url).response)
             if (json["code"].textValue() == "200") {
                 DailyWeather.code = json["code"].textValue()
-                DailyWeather.sportText = json["daily"][0]["text"].textValue()
-                DailyWeather.carText = json["daily"][1]["text"].textValue()
+                try {
+                    DailyWeather.sportText = json["daily"][0]["text"].textValue()
+                    DailyWeather.carText = json["daily"][1]["text"].textValue()
+                } catch (e: Exception) {
+                    DailyWeather.carText = "这里的小提示提示不归阿姬管哦"
+                    DailyWeather.sportText = "阿姬也不知道这里该怎么运动呢"
+                }
+
             } else {
                 DailyWeather.code = json["code"].textValue()
                 DailyWeather.errorMsg = "阿姬今天没有什么提示哦"
@@ -123,9 +132,4 @@ class GeoApi {
             Prediction.errorMsg = "接口肯定是炸了!快来修接口！"
         }
     }
-}
-
-fun main() {
-    GeoApi().getCityData("宁波")
-    GeoApi().getWeatherData()
 }

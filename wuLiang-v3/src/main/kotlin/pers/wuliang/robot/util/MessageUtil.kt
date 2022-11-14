@@ -1,4 +1,4 @@
-package pers.wuLiang.robot.util
+package pers.wuliang.robot.util
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import love.forte.simbot.message.Message
@@ -15,4 +15,5 @@ val objectMapper = ObjectMapper()
  */
 class MessageUtil {
     fun encodeMessage(message: Message) = objectMapper.writeValueAsString(message)
+
 }

@@ -5,9 +5,12 @@ import love.forte.simboot.annotation.FilterValue
 import love.forte.simboot.filter.MatchType
 import love.forte.simbot.Api4J
 import love.forte.simbot.event.GroupMessageEvent
+import love.forte.simbot.message.Image.Key.toImage
+import love.forte.simbot.resources.Resource.Companion.toResource
 import org.springframework.stereotype.Component
 import pers.wuLiang.robot.core.annotation.RobotListen
 import pers.wuLiang.robot.core.common.send
+import java.io.File
 
 /**
  *@Description:城市信息查询接口
@@ -30,10 +33,10 @@ class GeoApiUse {
         return Prediction.jsonNode?.get(index)?.get(data)?.textValue()
     }
 
-    fun clearData(){
-        City.jsonNode=null
-        Weather.jsonNode=null
-        Prediction.jsonNode=null
+    fun clearData() {
+        City.jsonNode = null
+        Weather.jsonNode = null
+        Prediction.jsonNode = null
     }
 
     @OptIn(Api4J::class)
@@ -76,6 +79,10 @@ class GeoApiUse {
         }
         replyBlocking(msg)
         clearData()
+        send(
+            File("C:\\Users\\86188\\Desktop\\wuyou-robot-v3-master\\wuLiang-v3\\src\\main\\resources\\Image\\2.png").toResource()
+                .toImage()
+        )
     }
 
     @OptIn(Api4J::class)
@@ -103,10 +110,17 @@ class GeoApiUse {
                     "日出时间:${getData(1, "sunrise")}   日落时间:${getData(1, "sunset")}\n" +
                     "最高气温:${getData(1, "tempMax")}°C    最低气温:${getData(1, "tempMin")}°C \n" +
                     "日间天气:${getData(1, "textDay")}    夜间天气:${getData(1, "textNight")}"
+
         } else {
             Weather.errorMsg.toString()
         }
+
+        GeoPicture().images()
         replyBlocking(msg)
+        send(
+            File("C:\\Users\\86188\\Desktop\\wuyou-robot-v3-master\\wuLiang-v3\\src\\main\\resources\\Image\\2.png").toResource()
+                .toImage()
+        )
         clearData()
     }
 
