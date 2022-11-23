@@ -11,6 +11,13 @@ import org.springframework.stereotype.Component
  */
 @Component
 class GeoConfig {
+    object Path {
+        var geoBg = "resources/Image/weatherBg.png"
+        var geoBg2 = "resources/Image/weatherBg_2.png"
+        var weather = "resources/Image/weather.png"
+        var city = "resources/Image/city.png"
+    }
+
     companion object {
         var key: String? = null
 

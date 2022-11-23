@@ -1,11 +1,12 @@
 package pers.wuliang.robot.botApi.geographyApi
 
-
+import pers.wuliang.robot.util.ImageUtil
 import java.awt.*
 import java.awt.image.BufferedImage
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import javax.imageio.ImageIO
-
 
 /**
  *@Description: 将从接口获得的数据进行图片化
@@ -35,7 +36,7 @@ class GeoPicture {
     }
 
     private var image: BufferedImage =
-        ImageIO.read(File("C:\\Users\\86188\\Desktop\\wuyou-robot-v3-master\\wuLiang-v3\\src\\main\\resources\\Image\\weatherBg.png"))
+        ImageIO.read(File(GeoConfig.Path.geoBg).absoluteFile)
 
     fun images() {
         val gd: Graphics2D = image.createGraphics()
@@ -49,10 +50,9 @@ class GeoPicture {
         var fm: FontMetrics = gd.getFontMetrics(gd.font)
         var tempText = "${getWeaData("temp")}°C ${getWeaData("text")}"
         var textWidth = fm.stringWidth(tempText)
-        val height = 180f
         val line: Int
         val width: Float
-        gd.drawString(tempText, (image.width - textWidth) / 2f, height)
+        gd.drawString(tempText, (image.width - textWidth) / 2f, 180f)
 
         // 粗体白字
         gd.font = Font("微软雅黑", Font.BOLD, 60)
@@ -174,7 +174,7 @@ class GeoPicture {
                 gd.drawString(nextArray[i], (image.width - fm.stringWidth(nextArray[i])) / 2f, 1670f + 160 * lines2)
             }
             if (i % 3 == 2) {
-                gd.drawString(nextArray[i], getNextWidth(fm,703f,nextArray[i]), 1670f + 160 * lines2)
+                gd.drawString(nextArray[i], getNextWidth(fm, 703f, nextArray[i]), 1670f + 160 * lines2)
                 lines2 += 1
             }
         }
@@ -190,7 +190,35 @@ class GeoPicture {
         gd.dispose()
         ImageIO.write(
             image, "png",
-            File("C:\\Users\\86188\\Desktop\\wuyou-robot-v3-master\\wuLiang-v3\\src\\main\\resources\\Image\\2.png")
+            File(GeoConfig.Path.weather).absoluteFile
         )
+    }
+
+    fun cityImage() {
+        ImageUtil().scaleImage(GeoConfig.Path.geoBg, GeoConfig.Path.geoBg2, 1080, 1920)
+        val image: BufferedImage = ImageIO.read(File(GeoConfig.Path.geoBg2).absoluteFile)
+
+        val gd: Graphics2D = image.createGraphics()
+        // 设置图片品质
+        gd.addRenderingHints(RenderingHints(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY))
+
+        gd.font = Font("微软雅黑", Font.PLAIN, 40)
+        // 计算文字长度，计算居中的x点坐标
+        var fm: FontMetrics = gd.getFontMetrics(gd.font)
+        // 城市名
+        gd.color = Color.white
+        val cityName = getCityData("name").toString()
+        gd.drawString(cityName, 42 + (360 - fm.stringWidth(cityName)) / 2f, 63f)
+        val cityInfo = "${getCityData("country")}    ${getCityData("adm1")}"
+        gd.drawString(cityInfo, (image.width - fm.stringWidth(cityInfo)) / 2f, 450f)
+
+        gd.font = Font("微软雅黑", Font.PLAIN, 100)
+        fm = gd.getFontMetrics(gd.font)
+        gd.drawString(cityName, (image.width - fm.stringWidth(cityName)) / 2f, 360f)
+
+        gd.dispose()
+        ImageIO.write(image, "png", File(GeoConfig.Path.city).absoluteFile)
+        Files.delete(Paths.get(File(GeoConfig.Path.geoBg2).absolutePath))
+
     }
 }

@@ -1,5 +1,7 @@
 package pers.wuliang.robot.botApi.geographyApi
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import love.forte.simboot.annotation.Filter
 import love.forte.simboot.annotation.FilterValue
 import love.forte.simboot.filter.MatchType
@@ -11,6 +13,8 @@ import org.springframework.stereotype.Component
 import pers.wuLiang.robot.core.annotation.RobotListen
 import pers.wuLiang.robot.core.common.send
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 
 /**
  *@Description:城市信息查询接口
@@ -23,10 +27,6 @@ class GeoApiUse {
 
     fun getCityData(data: String): String? {
         return City.jsonNode?.get(data)?.textValue()
-    }
-
-    fun getWeaData(data: String): String? {
-        return Weather.jsonNode?.get(data)?.textValue()
     }
 
     fun getData(index: Int, data: String): String? {
@@ -78,14 +78,16 @@ class GeoApiUse {
             City.errorMsg.toString()
         }
         replyBlocking(msg)
+        GeoPicture().cityImage()
+
         clearData()
-        send(
-            File("C:\\Users\\86188\\Desktop\\wuyou-robot-v3-master\\wuLiang-v3\\src\\main\\resources\\Image\\2.png").toResource()
-                .toImage()
-        )
+        send(File(GeoConfig.Path.city).absoluteFile.toResource().toImage())
+        // 删除生成的图片减少内存占用
+        withContext(Dispatchers.IO) {
+            Files.delete(Paths.get(File(GeoConfig.Path.city).absolutePath))
+        }
     }
 
-    @OptIn(Api4J::class)
     @RobotListen(desc = "查询城市天气情况")
     @Filter("{{city}}天气", matchType = MatchType.REGEX_MATCHES)
     @Filter("/tq {{city}}", matchType = MatchType.REGEX_MATCHES)
@@ -94,33 +96,11 @@ class GeoApiUse {
         GeoApi().getCityData(city)
         GeoApi().getWeatherData()
         GeoApi().preWeather()
-        val msg: String = if (Weather.code == "200") {
-            "无量姬·零贰已经获取到了 ${getCityData("adm1") + getCityData("adm2")} 的天气呢\n" +
-                    "更新时间: \n" +
-                    "${Weather.updateTime}\n" +
-                    "气温: ${getWeaData("temp")}°C   体感温度: ${getWeaData("feelsLike")}°C\n" +
-                    "天气状况: ${getWeaData("text")}\n" +
-                    "风力情况: ${getWeaData("windDir")}-${getWeaData("wind360")}°-${getWeaData("windScale")} 级\n" +
-                    "相对湿度: ${getWeaData("humidity")} %\n" +
-                    "大气压强: ${getWeaData("pressure")} 百帕\n" +
-                    "能见度: ${getWeaData("vis")} 公里\n" +
-                    "洗车指南: ${DailyWeather.carText}\n" +
-                    "阿姬小提示: ${DailyWeather.sportText}\n" +
-                    "--------${getData(1, "fxDate")}-------\n" +
-                    "日出时间:${getData(1, "sunrise")}   日落时间:${getData(1, "sunset")}\n" +
-                    "最高气温:${getData(1, "tempMax")}°C    最低气温:${getData(1, "tempMin")}°C \n" +
-                    "日间天气:${getData(1, "textDay")}    夜间天气:${getData(1, "textNight")}"
-
-        } else {
-            Weather.errorMsg.toString()
-        }
-
         GeoPicture().images()
-        replyBlocking(msg)
-        send(
-            File("C:\\Users\\86188\\Desktop\\wuyou-robot-v3-master\\wuLiang-v3\\src\\main\\resources\\Image\\2.png").toResource()
-                .toImage()
-        )
+        send(File(GeoConfig.Path.weather).absoluteFile.toResource().toImage())
+        withContext(Dispatchers.IO) {
+            Files.delete(Paths.get(File(GeoConfig.Path.weather).absolutePath))
+        }
         clearData()
     }
 

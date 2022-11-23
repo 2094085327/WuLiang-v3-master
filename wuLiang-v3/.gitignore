@@ -37,3 +37,4 @@ build/
 *-*.yml
 /music/
 /src/main/resources/META-INF/
+/src/main/resources/application.yml/
