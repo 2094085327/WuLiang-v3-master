@@ -78,7 +78,6 @@ class GeoApiUse {
             City.errorMsg.toString()
         }
         replyBlocking(msg)
-        GeoPicture().cityImage()
 
         clearData()
         send(File(GeoConfig.Path.city).absoluteFile.toResource().toImage())
