@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component
 import pers.wuLiang.robot.core.annotation.RobotListen
 import pers.wuliang.robot.dataBase.enity.Currency
 import pers.wuliang.robot.dataBase.mapper.CurrencyMapper
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.*
+import kotlin.math.pow
 
 
 /**
@@ -26,20 +28,6 @@ import java.time.format.DateTimeFormatter
 class CurrencyController {
     @Autowired
     lateinit var currencyMapper: CurrencyMapper
-
-    /**
-     * 计算两个时间点的天数差
-     * @param dt1 第一个时间点
-     * @param dt2 第二个时间点
-     * @return int，即要计算的天数差
-     */
-    fun dateDiff(dt1: LocalDateTime, dt2: LocalDateTime): Int {
-        val t1 = dt1.toEpochSecond(ZoneOffset.ofHours(0))
-        val day1 = t1 / (60 * 60 * 24)
-        val t2 = dt2.toEpochSecond(ZoneOffset.ofHours(0))
-        val day2 = t2 / (60 * 60 * 24)
-        return (day2 - day1).toInt()
-    }
 
     fun randomText(randoms: Int): String? {
         var text: String? = null
@@ -59,12 +47,58 @@ class CurrencyController {
     }
 
     /**
+     * 计算当前等级所需经验并判断是否升级
+     */
+    fun level(level: Int, exp: Int): Int? {
+        val expNeed = 30 * 2.0.pow((level + 1).toDouble())
+        println(expNeed)
+        return if (exp > expNeed && exp <= 1024) {
+            level + 1
+        } else {
+            level
+        }
+    }
+
+    fun exp(exp: Int?, improveExp: Int): Int? {
+        val exps = if (exp!! > 1024) {
+            0
+        } else {
+            improveExp
+        }
+        return exps
+    }
+
+    /**
+     * 判断是否在同一个月
+     *
+     * @return false:不在同一个月内，true在同一个月内
+     */
+    fun isMonth(date1: Date?, date2: Date?): Boolean {
+        val calendar1 = Calendar.getInstance()
+        calendar1.time = date1
+        val calendar2 = Calendar.getInstance()
+        calendar2.time = date2
+        return calendar1[Calendar.YEAR] == calendar2[Calendar.YEAR] && calendar1[Calendar.MONTH] == calendar2[Calendar.MONTH]
+    }
+
+    /**
+     * 计算间隔天数
+     */
+    fun getPastDay(date0: Date, date: String?): Long {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        return (date0.time - dateFormat.parse(date).time) / 86400000
+    }
+
+    /**
      * 通过签到获取金币
      */
     @OptIn(Api4J::class)
     @RobotListen(desc = "签到获取金币")
     @Filter("签到", matchType = MatchType.REGEX_MATCHES)
     suspend fun GroupMessageEvent.currencySign() {
+        // 时间戳格式化只取年月日
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        val calendar = Calendar.getInstance()
         val queryWrapper: QueryWrapper<Currency> =
             Wrappers.query<Currency?>().apply { eq("qqId", author().id.toString()) }
 
@@ -74,9 +108,12 @@ class CurrencyController {
             val currency = Currency(
                 qqId = author().id.toString(),
                 qqName = author().nickOrUsername,
+                level = 1,
+                exp = 3,
                 money = 500 + randoms,
                 updateTime = LocalDateTime.now(),
-                signTime = LocalDateTime.now()
+                signTime = dateFormat.format(calendar.time),
+                times = 1
             )
             currencyMapper.insert(currency)
             replyBlocking(
@@ -85,14 +122,19 @@ class CurrencyController {
                         "${randomText(randoms)}" +
                         "你今天签到获得了 ${500 + randoms} 无量币\n\n" +
                         "余额:  ${500 + randoms} 无量币\n\n" +
+                        "本月已签到: 1 天\n\n" +
                         "签到日期: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}"
             )
         } else {
-            if (currencyExist.signTime?.let { dateDiff(LocalDateTime.now(), it) }!! >= 1) {
+            if (getPastDay(Date(), currencyExist.signTime) >= 1) {
                 val currency = Currency(
                     qqName = author().nickOrUsername,
+                    level = currencyExist.level?.let { exp(currencyExist.exp, 3)?.let { it1 -> level(it, it1) } },
+                    exp = exp(currencyExist.exp, 3)?.let { currencyExist.exp?.plus(it) },
                     money = currencyExist.money?.plus(500 + randoms),
-                    updateTime = LocalDateTime.now()
+                    updateTime = LocalDateTime.now(),
+                    signTime = dateFormat.format(calendar.time),
+                    times = currencyExist.times?.plus(1)
                 )
                 currencyMapper.update(currency, queryWrapper)
                 replyBlocking(
@@ -100,7 +142,9 @@ class CurrencyController {
                             "昵称: ${author().nickOrUsername}\n\n" +
                             "${randomText(randoms)}" +
                             "你今天签到获得了 ${500 + randoms} 无量币\n\n" +
+                            "等级: ${currency.level} LV\n\n" +
                             "余额: ${currencyExist.money?.plus(500 + randoms)} 无量币\n\n" +
+                            "本月已签到: ${currency.times} 天\n\n" +
                             "签到日期: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}"
                 )
             } else {
@@ -108,4 +152,80 @@ class CurrencyController {
             }
         }
     }
+
+    /**
+     * 补签
+     */
+    @OptIn(Api4J::class)
+    @RobotListen(desc = "花费无量币进行补签")
+    @Filter("补签", matchType = MatchType.REGEX_MATCHES)
+    suspend fun GroupMessageEvent.countersign() {
+        // 时间戳格式化只取年月日
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        val calendar = Calendar.getInstance()
+        val queryWrapper: QueryWrapper<Currency> =
+            Wrappers.query<Currency?>().apply { eq("qqId", author().id.toString()) }
+
+        val currencyExist = currencyMapper.selectOne(queryWrapper)
+        val randoms = (-500..800).random()
+        if (currencyExist == null) {
+            replyBlocking("你还没有签到过，输入「签到」进行第一次签到吧")
+        } else {
+            if (isMonth(
+                    Date(),
+                    dateFormat.parse(currencyExist.signTime)
+                ) && calendar.get(Calendar.DAY_OF_MONTH) > currencyExist.times.toString().toInt()
+            ) {
+                val currency = Currency(
+                    qqName = author().nickOrUsername,
+                    level = currencyExist.level?.let { exp(currencyExist.exp, 3)?.let { it1 -> level(it, it1) } },
+                    exp = exp(currencyExist.exp, 3)?.let { currencyExist.exp?.plus(it) },
+                    money = currencyExist.money?.plus(500 + randoms),
+                    updateTime = LocalDateTime.now(),
+                    signTime = dateFormat.format(calendar.time),
+                    times = currencyExist.times?.plus(1)
+                )
+                currencyMapper.update(currency, queryWrapper)
+                replyBlocking(
+                    "[---------补签成功--------]\n" +
+                            "昵称: ${author().nickOrUsername}\n\n" +
+                            "${randomText(randoms)}" +
+                            "你今天签到获得了 ${500 + randoms} 无量币\n\n" +
+                            "等级: ${currency.level} LV\n\n" +
+                            "余额: ${currencyExist.money?.plus(500 + randoms)} 无量币\n\n" +
+                            "本月已签到: ${currency.times} 天\n\n" +
+                            "签到日期: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}"
+                )
+            }
+            if (currencyExist.times == 0) {
+                replyBlocking("这个月目前为止你还未签到过哦，无法补签~")
+            } else {
+                replyBlocking("这个月目前为止你还未签到或已经全部签到过了哦，无法补签~")
+            }
+        }
+    }
+
+    @OptIn(Api4J::class)
+    @RobotListen(desc = "查询金币数")
+    @Filter("查询", matchType = MatchType.REGEX_MATCHES)
+    suspend fun GroupMessageEvent.selectMoney() {
+        val queryWrapper: QueryWrapper<Currency> =
+            Wrappers.query<Currency?>().apply { eq("qqId", author().id.toString()) }
+        val user = currencyMapper.selectOne(queryWrapper)
+        if (user != null) {
+            replyBlocking(
+                "[---------用户信息--------]\n" +
+                        "昵称: ${author().nickOrUsername}\n" +
+                        "等级: ${user.level} LV\n" +
+                        "无量币: ${user.money} 无量币\n" +
+                        "本月已签到: ${user.times} 天\n\n" +
+                        "上次签到: ${user.signTime}"
+            )
+        } else {
+            replyBlocking("你还没有余额哦，输入「签到」来获取无量币吧")
+        }
+    }
+
+
 }
+

@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor
 import lombok.NoArgsConstructor
 import lombok.ToString
 import java.time.LocalDateTime
+import java.util.*
 
 /**
  *@Description: QQ群货币
@@ -26,10 +27,16 @@ data class Currency(
     val qqId: String? = null,
     @TableField("qqName")
     val qqName: String? = null,
+    @TableField("level")
+    val level: Int? = null,
+    @TableField("exp")
+    val exp: Int? = null,
     @TableField("money")
     val money: Int? = null,
     @TableField("updateTime")
     val updateTime: LocalDateTime? = null,
     @TableField("signTime")
-    val signTime: LocalDateTime? = null
+    val signTime: String? = null ,
+    @TableField("times")
+    val times: Int? = null
 )

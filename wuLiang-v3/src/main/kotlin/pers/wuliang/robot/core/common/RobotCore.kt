@@ -2,6 +2,7 @@
 
 package pers.wuLiang.robot.core.common
 
+import love.forte.simbot.ID
 import love.forte.simbot.bot.Bot
 import love.forte.simbot.bot.OriginBotManager
 import org.ktorm.database.Database
@@ -70,7 +71,7 @@ class RobotCore( private var applicationContext: ApplicationContext) {
         /**
          * 机器人管理员
          */
-        val ADMINISTRATOR: List<String> = listOf("1097810498")
+        val ADMINISTRATOR: List<String> = listOf("")
 
         /**
          * 缓存群开关
