@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component
 import pers.wuLiang.robot.core.annotation.RobotListen
 import pers.wuLiang.robot.core.common.Constant
 import pers.wuLiang.robot.core.common.send
-
 import java.io.File
 
 
@@ -108,7 +107,7 @@ class GroupListener {
 //        try {
 //            originMiraiQuoteReply.source.recall()
 //
-            messageContent.delete()
+        messageContent.delete()
 //
 //            val msg =
 //                "「${author().nickOrUsername}」 通过bot撤回了一条消息"
@@ -119,5 +118,4 @@ class GroupListener {
 //            send("撤回失败，无法撤回此消息：${e.message}")
 //        }
     }
-
 }

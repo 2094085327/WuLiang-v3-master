@@ -24,10 +24,13 @@ class MessageController {
     @OptIn(Api4J::class)
     @RobotListen(desc = "群组消息监听")
     suspend fun GroupMessageEvent.allEventListen() {
-        val content: String = if (messageContent.plainText != "") {
+        var content: String = if (messageContent.plainText != "" ) {
             messageContent.plainText
         } else {
             messageContent.messages.toString()
+        }
+        if (content.length>200){
+            content = "长消息，无法存储"
         }
         val msg = Messages(
             groupId = group.id.toString(),

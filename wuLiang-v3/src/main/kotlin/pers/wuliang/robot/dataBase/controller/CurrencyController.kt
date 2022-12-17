@@ -15,11 +15,10 @@ import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.math.pow
 
 
 /**
- *@Description:
+ *@Description: 签到的controller类
  *@Author zeng
  *@Date 2022/11/28 16:56
  *@User 86188
@@ -50,9 +49,10 @@ class CurrencyController {
      * 计算当前等级所需经验并判断是否升级
      */
     fun level(level: Int, exp: Int): Int? {
-        val expNeed = 30 * 2.0.pow((level + 1).toDouble())
+        val expNeed = 110 * level
         println(expNeed)
-        return if (exp > expNeed && exp <= 1024) {
+        println(exp)
+        return if (exp > expNeed && level < 10) {
             level + 1
         } else {
             level
@@ -60,7 +60,7 @@ class CurrencyController {
     }
 
     fun exp(exp: Int?, improveExp: Int): Int? {
-        val exps = if (exp!! > 1024) {
+        val exps = if (exp!! > 990) {
             0
         } else {
             improveExp
@@ -129,7 +129,10 @@ class CurrencyController {
             if (getPastDay(Date(), currencyExist.signTime) >= 1) {
                 val currency = Currency(
                     qqName = author().nickOrUsername,
-                    level = currencyExist.level?.let { exp(currencyExist.exp, 3)?.let { it1 -> level(it, it1) } },
+                    level = level(
+                        currencyExist.level.toString().toInt(),
+                        currencyExist.exp.toString().toInt() + exp(currencyExist.exp, 3).toString().toInt()
+                    ),
                     exp = exp(currencyExist.exp, 3)?.let { currencyExist.exp?.plus(it) },
                     money = currencyExist.money?.plus(500 + randoms),
                     updateTime = LocalDateTime.now(),
@@ -176,31 +179,39 @@ class CurrencyController {
                     dateFormat.parse(currencyExist.signTime)
                 ) && calendar.get(Calendar.DAY_OF_MONTH) > currencyExist.times.toString().toInt()
             ) {
-                val currency = Currency(
-                    qqName = author().nickOrUsername,
-                    level = currencyExist.level?.let { exp(currencyExist.exp, 3)?.let { it1 -> level(it, it1) } },
-                    exp = exp(currencyExist.exp, 3)?.let { currencyExist.exp?.plus(it) },
-                    money = currencyExist.money?.plus(500 + randoms),
-                    updateTime = LocalDateTime.now(),
-                    signTime = dateFormat.format(calendar.time),
-                    times = currencyExist.times?.plus(1)
-                )
-                currencyMapper.update(currency, queryWrapper)
-                replyBlocking(
-                    "[---------补签成功--------]\n" +
-                            "昵称: ${author().nickOrUsername}\n\n" +
-                            "${randomText(randoms)}" +
-                            "你今天签到获得了 ${500 + randoms} 无量币\n\n" +
-                            "等级: ${currency.level} LV\n\n" +
-                            "余额: ${currencyExist.money?.plus(500 + randoms)} 无量币\n\n" +
-                            "本月已签到: ${currency.times} 天\n\n" +
-                            "签到日期: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}"
-                )
-            }
-            if (currencyExist.times == 0) {
-                replyBlocking("这个月目前为止你还未签到过哦，无法补签~")
+                if (currencyExist.money?.minus(300)!! > 0) {
+                    val currency = Currency(
+                        qqName = author().nickOrUsername,
+                        level = level(
+                            currencyExist.level.toString().toInt(),
+                            currencyExist.exp.toString().toInt() + exp(currencyExist.exp, 3).toString().toInt()
+                        ),
+                        exp = exp(currencyExist.exp, 3)?.let { currencyExist.exp?.plus(it) },
+                        money = currencyExist.money?.plus(500 + randoms),
+                        updateTime = LocalDateTime.now(),
+                        signTime = dateFormat.format(calendar.time),
+                        times = currencyExist.times?.plus(1)
+                    )
+                    currencyMapper.update(currency, queryWrapper)
+                    replyBlocking(
+                        "[---------补签成功--------]\n" +
+                                "昵称: ${author().nickOrUsername}\n\n" +
+                                "${randomText(randoms)}" +
+                                "你今天签到获得了 ${500 + randoms} 无量币\n\n" +
+                                "等级: ${currency.level} LV\n\n" +
+                                "余额: ${currencyExist.money?.plus(500 + randoms)} 无量币\n\n" +
+                                "本月已签到: ${currency.times} 天\n\n" +
+                                "签到日期: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}"
+                    )
+                }
+
+
             } else {
-                replyBlocking("这个月目前为止你还未签到或已经全部签到过了哦，无法补签~")
+                if (currencyExist.times == 0) {
+                    replyBlocking("这个月目前为止你还未签到过哦，无法补签~")
+                } else {
+                    replyBlocking("这个月目前为止你已经全部签到过了哦，无法补签~")
+                }
             }
         }
     }

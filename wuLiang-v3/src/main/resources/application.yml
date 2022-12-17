@@ -14,6 +14,9 @@ weather:
 server:
   port: 9898
 
+wuLiang:
+  config:
+    gallery: "https://cdn.jsdelivr.net/gh/2094085327/GenShinImage/"
 ##配置数据源
 spring:
   datasource:

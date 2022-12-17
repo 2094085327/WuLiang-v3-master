@@ -50,7 +50,6 @@ class GeoPicture {
         val line: Int
         val width: Float
         gd.drawString(tempText, (image.width - textWidth) / 2f, 180f)
-
         // 粗体白字
         gd.font = Font("微软雅黑", Font.BOLD, 60)
         fm = gd.getFontMetrics(gd.font)
