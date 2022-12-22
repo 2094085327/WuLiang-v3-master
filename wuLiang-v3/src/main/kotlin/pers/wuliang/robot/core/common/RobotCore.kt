@@ -1,17 +1,12 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 
-package pers.wuLiang.robot.core.common
+package pers.wuliang.robot.core.common
 
-import love.forte.simbot.ID
 import love.forte.simbot.bot.Bot
 import love.forte.simbot.bot.OriginBotManager
-import org.ktorm.database.Database
-import org.ktorm.entity.forEach
-import org.ktorm.entity.sequenceOf
 import org.springframework.context.ApplicationContext
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import pers.wuLiang.robot.core.entity.GroupBootStates
 import java.io.File
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
@@ -27,15 +22,15 @@ class RobotCore( private var applicationContext: ApplicationContext) {
 
     @PostConstruct
     fun init() {
-        setApplicationContext()
+//        setApplicationContext()
 //        initGroupBootMap()
     }
 
-    @Synchronized
-    private fun setApplicationContext() {
-        robotCore = this
-        RobotCore.applicationContext = applicationContext
-    }
+//    @Synchronized
+//    private fun setApplicationContext() {
+//        robotCore = this
+//        Companion.applicationContext = applicationContext
+//    }
 
 //    private fun initGroupBootMap() {
 //        val list = database.sequenceOf(GroupBootStates)
@@ -51,7 +46,7 @@ class RobotCore( private var applicationContext: ApplicationContext) {
         /**
          * 项目名
          */
-        const val PROJECT_NAME: String = "wuyou-robot"
+        const val PROJECT_NAME: String = "wuLiang-v3"
 
         /**
          * 项目路径
@@ -66,7 +61,7 @@ class RobotCore( private var applicationContext: ApplicationContext) {
         /**
          * python路径
          */
-        var PYTHON_PATH: String? = null
+//        var PYTHON_PATH: String? = null
 
         /**
          * 机器人管理员
@@ -78,21 +73,21 @@ class RobotCore( private var applicationContext: ApplicationContext) {
          */
         val BOOT_MAP: MutableMap<String?, Boolean> = HashMap()
 
-        /**
-         * 全局随机数
-         */
-        val RANDOM: Random = ThreadLocalRandom.current()
-
-        var robotCore: RobotCore? = null
-
-        init {
-            val pythonEnvPath = "venv"
-            PYTHON_PATH = if (File(PROJECT_PATH + pythonEnvPath).exists()) {
-                PROJECT_PATH + "venv" + File.separator + "Scripts" + File.separator + "python"
-            } else {
-                null
-            }
-        }
+//        /**
+//         * 全局随机数
+//         */
+//        val RANDOM: Random = ThreadLocalRandom.current()
+//
+//        var robotCore: RobotCore? = null
+//
+//        init {
+//            val pythonEnvPath = "venv"
+//            PYTHON_PATH = if (File(PROJECT_PATH + pythonEnvPath).exists()) {
+//                PROJECT_PATH + "venv" + File.separator + "Scripts" + File.separator + "python"
+//            } else {
+//                null
+//            }
+//        }
 
         fun isBotAdministrator(accountCode: String): Boolean {
             return ADMINISTRATOR.contains(accountCode)

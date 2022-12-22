@@ -8,8 +8,8 @@
 //import org.aspectj.lang.annotation.Around
 //import org.aspectj.lang.annotation.Aspect
 //import org.springframework.stereotype.Component
-//import pers.wuLiang.robot.core.annotation.RobotListen
-//import pers.wuLiang.robot.core.enums.RobotPermission
+//import pers.wuliang.robot.core.annotation.RobotListen
+//import pers.wuliang.robot.core.enums.RobotPermission
 //
 ///**
 // * 拦截监听器

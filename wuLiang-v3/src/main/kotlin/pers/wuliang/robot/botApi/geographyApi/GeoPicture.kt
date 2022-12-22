@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
 
+
 /**
  *@Description: 将从接口获得的数据进行图片化
  *@Author zeng
@@ -36,6 +37,9 @@ class GeoPicture {
         ImageIO.read(File(GeoConfig.Path.geoBg).absoluteFile)
 
     fun images() {
+        val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
+        ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, File("resources/Font/微软雅黑.otf").absoluteFile))
+
         val gd: Graphics2D = image.createGraphics()
         // 设置图片品质
         gd.addRenderingHints(RenderingHints(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY))

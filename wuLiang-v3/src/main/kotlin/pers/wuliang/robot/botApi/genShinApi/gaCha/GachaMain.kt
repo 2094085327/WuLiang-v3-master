@@ -7,8 +7,8 @@ import love.forte.simbot.event.GroupMessageEvent
 import love.forte.simbot.message.Image.Key.toImage
 import love.forte.simbot.resources.Resource.Companion.toResource
 import org.springframework.stereotype.Component
-import pers.wuLiang.robot.core.annotation.RobotListen
-import pers.wuLiang.robot.core.common.send
+import pers.wuliang.robot.core.annotation.RobotListen
+import pers.wuliang.robot.core.common.send
 
 /**
  *@Description: 抽卡分析的主类
@@ -48,6 +48,9 @@ class GachaMain {
         val totalData = PictureMake().allDataMake()
         val allImage = PictureMake().compositePicture(totalData, roleData, armsData, perData)
 
+        GachaData.finCount = 0
+        GachaData.finItem = 0
+        GachaData.finProbability = 0.0
         send(allImage.toResource().toImage())
     }
 }

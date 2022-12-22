@@ -1,11 +1,11 @@
-package pers.wuLiang.robot.core.annotation
+package pers.wuliang.robot.core.annotation
 
 import love.forte.simboot.annotation.ContentTrim
 import love.forte.simboot.annotation.Listener
 import love.forte.simbot.PriorityConstant
 import love.forte.simbot.event.GroupMessageEvent
 import org.springframework.core.annotation.AliasFor
-import pers.wuLiang.robot.core.enums.RobotPermission
+import pers.wuliang.robot.core.enums.RobotPermission
 
 /**
  * @author wuyou

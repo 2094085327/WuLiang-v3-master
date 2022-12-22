@@ -1,4 +1,4 @@
-package pers.wuLiang.robot.core.enums
+package pers.wuliang.robot.core.enums
 
 import love.forte.simbot.definition.Role
 

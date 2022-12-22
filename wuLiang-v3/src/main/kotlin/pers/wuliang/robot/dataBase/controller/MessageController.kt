@@ -4,7 +4,7 @@ import love.forte.simbot.Api4J
 import love.forte.simbot.event.GroupMessageEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import pers.wuLiang.robot.core.annotation.RobotListen
+import pers.wuliang.robot.core.annotation.RobotListen
 import pers.wuliang.robot.dataBase.enity.Messages
 import pers.wuliang.robot.dataBase.mapper.MessageMapper
 import java.time.LocalDateTime

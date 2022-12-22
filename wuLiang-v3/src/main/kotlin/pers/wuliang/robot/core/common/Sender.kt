@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package pers.wuLiang.robot.core.common
+package pers.wuliang.robot.core.common
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -39,14 +39,14 @@ class Sender {
             withTimeoutOrNull(time) {
                 val eventMatcher = it["eventMatcher"] as ContinuousSessionEventMatcher<MessageEvent>
                 val channel = it["channel"] as Channel<MessageContent>
-                session.waitingForNextMessage(originalEvent.receipt.hashCode().toString(), ContinuousSessionEventMatcher { event ->
-                    return@ContinuousSessionEventMatcher eventMatcher.run { invoke(event) } && event.getId() == it["id"]
-                }).let { msg ->
+                session.waitingForNextMessage(
+                    originalEvent.receipt.hashCode().toString(),
+                    ContinuousSessionEventMatcher { event ->
+                        return@ContinuousSessionEventMatcher eventMatcher.run { invoke(event) } && event.getId() == it["id"]
+                    }).let { msg ->
                     channel.send(msg)
-                }}
-//            }.isNull {
-//                logger { "${it["id"]}等待超时" }
-//            }
+                }
+            }
         }
     }
 

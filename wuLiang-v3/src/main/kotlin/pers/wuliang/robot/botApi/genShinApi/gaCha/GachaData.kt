@@ -1,9 +1,10 @@
 package pers.wuliang.robot.botApi.genShinApi.gaCha
 
 import com.fasterxml.jackson.databind.JsonNode
-import pers.wuliang.robot.botApi.geographyApi.objectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
 import pers.wuliang.robot.util.HttpUtil
 
+var objectMapper = ObjectMapper()
 
 /**
  *@Description: 数据处理类
@@ -169,34 +170,39 @@ class GachaData {
         var alreadyCost = 0
         var roleList: Array<String> = arrayOf()
         var costList: Array<Int> = arrayOf()
-        for (i in 1..9999) {
-            // 接口URL地址
-            val urls: String = getUrl(url, gachaType, i, endId)
+        try {
+            for (i in 1..9999) {
+                // 接口URL地址
+                val urls: String = getUrl(url, gachaType, i, endId)
 
-            // 请求json数据
-            val data = objectMapper.readTree(HttpUtil.get(urls).response)["data"]
-            val length: Int = data["list"].size()
-            count += length
+                // 请求json数据
+                val data = objectMapper.readTree(HttpUtil.get(urls).response)["data"]
+                val length: Int = data["list"].size()
+                count += length
 
-            // 当数组长度为0时(即没有抽卡记录时)跳出循环
-            if (length == 0) {
-                costList += alreadyCost
-                alreadyCost = 0
-                break
-            }
-            endId = data["list"][length - 1]["id"].textValue()
-            data["list"].forEach { item ->
-                val rankType: String = item["rank_type"].textValue()
-                if (rankType == "5") {
+                // 当数组长度为0时(即没有抽卡记录时)跳出循环
+                if (length == 0) {
                     costList += alreadyCost
-                    roleList += item["name"].textValue()
                     alreadyCost = 0
-                } else {
-                    alreadyCost += 1
+                    break
                 }
+                endId = data["list"][length - 1]["id"].textValue()
+                data["list"].forEach { item ->
+                    val rankType: String = item["rank_type"].textValue()
+                    if (rankType == "5") {
+                        costList += alreadyCost
+                        roleList += item["name"].textValue()
+                        alreadyCost = 0
+                    } else {
+                        alreadyCost += 1
+                    }
+                }
+                Thread.sleep(500)
             }
-            Thread.sleep(500)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+        println("--卡池:$gachaType 分析完成--")
         return createItemData(roleList, costList)
     }
 

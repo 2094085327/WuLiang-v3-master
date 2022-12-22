@@ -16,10 +16,16 @@ val String.urlCode: String? get() = URLEncoder.encode(this, "UTF-8")
 class GachaConfig {
     companion object {
         var galleryPath: String? = ""
+        var localPath: String? = ""
     }
 
     @Value("\${wuLiang.config.gallery}")
     fun setPath(path: String) {
-        GachaConfig.galleryPath = path
+        galleryPath = path
+    }
+
+    @Value("\${wuLiang.config.localPath}")
+    fun setLocalPath(path: String) {
+        localPath = path
     }
 }

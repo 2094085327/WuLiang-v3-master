@@ -25,7 +25,7 @@ import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.message.BasicHeader
 import org.apache.http.util.EntityUtils
-import pers.wuLiang.robot.core.common.then
+import pers.wuliang.robot.core.common.then
 import pers.wuliang.robot.util.PostType.*
 import java.io.IOException
 import java.net.URISyntaxException

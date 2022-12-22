@@ -1,4 +1,4 @@
-package pers.wuLiang.robot.listener
+package pers.wuliang.robot.listener
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.Dispatchers
@@ -14,9 +14,9 @@ import net.mamoe.mirai.contact.PermissionDeniedException
 import net.mamoe.mirai.message.data.MessageSource.Key.recall
 import net.mamoe.mirai.message.data.QuoteReply
 import org.springframework.stereotype.Component
-import pers.wuLiang.robot.core.annotation.RobotListen
-import pers.wuLiang.robot.core.common.Constant
-import pers.wuLiang.robot.core.common.send
+import pers.wuliang.robot.core.annotation.RobotListen
+import pers.wuliang.robot.core.common.Constant
+import pers.wuliang.robot.core.common.send
 import java.io.File
 
 

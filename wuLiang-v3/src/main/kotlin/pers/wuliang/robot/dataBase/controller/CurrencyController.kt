@@ -8,7 +8,7 @@ import love.forte.simbot.Api4J
 import love.forte.simbot.event.GroupMessageEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import pers.wuLiang.robot.core.annotation.RobotListen
+import pers.wuliang.robot.core.annotation.RobotListen
 import pers.wuliang.robot.dataBase.enity.Currency
 import pers.wuliang.robot.dataBase.mapper.CurrencyMapper
 import java.text.SimpleDateFormat
@@ -50,8 +50,6 @@ class CurrencyController {
      */
     fun level(level: Int, exp: Int): Int? {
         val expNeed = 110 * level
-        println(expNeed)
-        println(exp)
         return if (exp > expNeed && level < 10) {
             level + 1
         } else {
@@ -187,7 +185,7 @@ class CurrencyController {
                             currencyExist.exp.toString().toInt() + exp(currencyExist.exp, 3).toString().toInt()
                         ),
                         exp = exp(currencyExist.exp, 3)?.let { currencyExist.exp?.plus(it) },
-                        money = currencyExist.money?.plus(500 + randoms),
+                        money = currencyExist.money.plus(500 + randoms),
                         updateTime = LocalDateTime.now(),
                         signTime = dateFormat.format(calendar.time),
                         times = currencyExist.times?.plus(1)
@@ -199,7 +197,7 @@ class CurrencyController {
                                 "${randomText(randoms)}" +
                                 "你今天签到获得了 ${500 + randoms} 无量币\n\n" +
                                 "等级: ${currency.level} LV\n\n" +
-                                "余额: ${currencyExist.money?.plus(500 + randoms)} 无量币\n\n" +
+                                "余额: ${currencyExist.money.plus(500 + randoms)} 无量币\n\n" +
                                 "本月已签到: ${currency.times} 天\n\n" +
                                 "签到日期: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}"
                     )

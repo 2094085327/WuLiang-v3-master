@@ -10,8 +10,8 @@ import love.forte.simbot.event.GroupMessageEvent
 import love.forte.simbot.message.Image.Key.toImage
 import love.forte.simbot.resources.Resource.Companion.toResource
 import org.springframework.stereotype.Component
-import pers.wuLiang.robot.core.annotation.RobotListen
-import pers.wuLiang.robot.core.common.send
+import pers.wuliang.robot.core.annotation.RobotListen
+import pers.wuliang.robot.core.common.send
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths

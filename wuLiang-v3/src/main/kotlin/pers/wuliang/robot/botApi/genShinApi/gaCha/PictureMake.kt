@@ -1,9 +1,12 @@
 package pers.wuliang.robot.botApi.genShinApi.gaCha
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import java.awt.*
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
 import java.net.URL
 import javax.imageio.ImageIO
@@ -18,6 +21,31 @@ import kotlin.math.ceil
  */
 class PictureMake {
 
+    private val imageCache = mutableMapOf<String, BufferedImage>()
+
+    private fun judgeImg(imagePath: String): BufferedImage {
+        val img = File(GachaConfig.localPath + imagePath).absoluteFile
+        if (img.exists()) {
+            return ImageIO.read(img)
+        }
+
+        if (imageCache.containsKey(imagePath)) {
+            return imageCache[imagePath]!!
+        }
+
+        var bi = ImageIO.read(URL(GachaConfig.galleryPath + imagePath.urlCode))
+        if (bi == null) {
+            bi = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/default1.png".urlCode))
+        }
+        val parent = img.parentFile
+        if (!parent.exists()) {
+            parent.mkdirs()
+        }
+        ImageIO.write(bi, "png", img)
+        imageCache[imagePath] = bi
+        return bi
+    }
+
     /**
      * 成比例缩放
      * @param imagePath 图片路径
@@ -31,7 +59,7 @@ class PictureMake {
             // 确定新尺寸的比例因子
             val widthScaleFactor: Double = newWidth.toDouble() / image.width
             val heightScaleFactor: Double = newHeight.toDouble() / image.height
-            val scaleFactor = Math.min(widthScaleFactor, heightScaleFactor)
+            val scaleFactor = widthScaleFactor.coerceAtMost(heightScaleFactor)
 
             // 计算图像的新大小
             val scaledWidth = (scaleFactor * image.width).toInt()
@@ -82,7 +110,7 @@ class PictureMake {
             probability > 20 -> "惨"
             else -> "寄"
         }
-        return ImageIO.read(URL(GachaConfig.galleryPath + "运气图片/${luck}.png".urlCode))
+        return judgeImg("运气图片/${luck}.png")
     }
 
     /**
@@ -90,18 +118,16 @@ class PictureMake {
      * @param gachaType 池子类型
      */
     fun poolImage(gachaType: String): BufferedImage {
-        val white = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/withe.png".urlCode))
-        val string2 = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/${gachaType}文字.png".urlCode))
-        val countWhite = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/计数块.png".urlCode))
+        val white = judgeImg("其他图片/withe.png")
+        val string2 = judgeImg("其他图片/${gachaType}文字.png")
+        val countWhite = judgeImg("其他图片/计数块.png")
         val luckImage = choseLuck()
 
         val lines = ceil((GachaMain.dataArray.size / 7.0))
         val newWhite = resizeImage(white, white.width, (white.height + 506 * lines + 60 * lines).toInt())
-
         // 创建绘画对象
         val gd: Graphics2D = newWhite.createGraphics()
         gd.drawImage(luckImage, 58, 58, luckImage.width, luckImage.height, null)
-
         gd.drawImage(string2, 1112, 100, string2.width, string2.height, null)
 
         var roleX = 58
@@ -109,47 +135,51 @@ class PictureMake {
         var counts = 0
         var lineX = 1
 
-        for (pair in GachaMain.dataArray) {
-            var roleImage = ImageIO.read(URL(GachaConfig.galleryPath + "${gachaType}图片/${pair.key}.png".urlCode))
-            if (roleImage == null) {
-                roleImage = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/default1.png".urlCode))
+        runBlocking {
+            // 并行下载图像
+            val images = GachaMain.dataArray.map {
+                async { judgeImg("${gachaType}图片/${it.key}.png") }
             }
-            gd.drawImage(
-                roleImage,
-                roleX + roleImage.width * (lineX - 1),
-                luckImage.height + 106 + (roleImage.height + 50) * (n - 1),
-                roleImage.width,
-                roleImage.height,
-                null
-            )
 
-            gd.drawImage(
-                countWhite,
-                roleX + roleImage.width * (lineX - 1),
-                luckImage.height + 482 + (roleImage.height + 50) * (n - 1),
-                countWhite.width,
-                countWhite.height,
-                null
-            )
+            images.forEachIndexed { index, deferredImage ->
+                // 获取图像
+                val roleImage = deferredImage.await()
+                gd.drawImage(
+                    roleImage,
+                    roleX + roleImage.width * (lineX - 1),
+                    luckImage.height + 106 + (roleImage.height + 50) * (n - 1),
+                    roleImage.width,
+                    roleImage.height,
+                    null
+                )
 
-            // 设置画笔颜色为黑色，画笔字体样式为微软雅黑，斜体，文字大小为20px
-            gd.color = Color(89, 87, 87)
-            gd.font = Font("汉仪青云简", Font.ITALIC, 100)
+                gd.drawImage(
+                    countWhite,
+                    roleX + roleImage.width * (lineX - 1),
+                    luckImage.height + 482 + (roleImage.height + 50) * (n - 1),
+                    countWhite.width,
+                    countWhite.height,
+                    null
+                )
 
-            gd.drawString(
-                pair.value.toString(),
-                roleX + 147 + roleImage.width * (lineX - 1),
-                luckImage.height + 575 + (roleImage.height + 50) * (n - 1)
-            )
+                // 设置画笔颜色为黑色，画笔字体样式为微软雅黑，斜体，文字大小为20px
+                gd.color = Color(89, 87, 87)
+                gd.font = Font("汉仪青云简", Font.ITALIC, 100)
 
-            roleX += 52
-            counts++
-            lineX++
-            if (counts.toFloat() / 7 == 1f) {
-                n++
-                counts = 0
-                lineX = 1
-                roleX = 58
+                gd.drawString(
+                    GachaMain.dataArray[index].toString(),
+                    roleX + 147 + roleImage.width * (lineX - 1),
+                    luckImage.height + 575 + (roleImage.height + 50) * (n - 1)
+                )
+                roleX += 52
+                counts++
+                lineX++
+                if (counts.toFloat() / 7 == 1f) {
+                    n++
+                    counts = 0
+                    lineX = 1
+                    roleX = 58
+                }
             }
         }
         gd.color = Color.BLACK
@@ -162,7 +192,6 @@ class PictureMake {
         gd.font = Font("微软雅黑", Font.ITALIC, 101)
         gd.drawString(GachaData.haveCost.toString(), 1336, 412)
         gd.dispose()
-
         GachaData.count = 0
         GachaData.haveCost = 0
         GachaData.right = 0
@@ -174,8 +203,8 @@ class PictureMake {
      * 生成最终统计数据的图片
      */
     fun allDataMake(): BufferedImage {
-        val white = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/withe.png".urlCode))
-        val allData = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/总数据.png".urlCode))
+        val white = judgeImg("其他图片/withe.png")
+        val allData = judgeImg("其他图片/总数据.png")
         val luckImage = choseLuck()
 
         val gd = white.createGraphics()
@@ -204,14 +233,25 @@ class PictureMake {
         armsData: BufferedImage,
         perData: BufferedImage
     ): InputStream {
-        val bg = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/sec.png".urlCode))
+        val bg = judgeImg("其他图片/sec.png")
         val newBg =
-            resizeImage(bg, bg.width, 500 + totalData.height + roleData.height + armsData.height + perData.height)
+            resizeImage(
+                bg,
+                bg.width,
+                500 + totalData.height + roleData.height + armsData.height + perData.height
+            )
         val gd = newBg.createGraphics()
         gd.drawImage(totalData, 100, 100, totalData.width, totalData.height, null)
         gd.drawImage(roleData, 100, 1242, roleData.width, roleData.height, null)
         gd.drawImage(armsData, 100, 1342 + roleData.height, armsData.width, armsData.height, null)
-        gd.drawImage(perData, 100, 1442 + roleData.height + armsData.height, perData.width, perData.height, null)
+        gd.drawImage(
+            perData,
+            100,
+            1442 + roleData.height + armsData.height,
+            perData.width,
+            perData.height,
+            null
+        )
         gd.dispose()
 
         // 转换成InputStream输出
