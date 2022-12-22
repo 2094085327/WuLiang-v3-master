@@ -167,7 +167,7 @@ class PictureMake {
                 gd.font = Font("汉仪青云简", Font.ITALIC, 100)
 
                 gd.drawString(
-                    GachaMain.dataArray[index].toString(),
+                    GachaMain.dataArray[index].value.toString(),
                     roleX + 147 + roleImage.width * (lineX - 1),
                     luckImage.height + 575 + (roleImage.height + 50) * (n - 1)
                 )
