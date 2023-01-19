@@ -85,37 +85,4 @@ class GroupListener {
             send("撤回失败，无法撤回此消息：${e.message}")
         }
     }
-
-    @RobotListen(
-        isBoot = true,
-        desc = "撤回操作",
-    )
-    @Filter("1111", matchType = MatchType.TEXT_STARTS_WITH)
-    suspend fun GroupMessageEvent.messageRecall2() {
-        val messages = messageContent.messages
-
-        println(messages)
-        withContext(Dispatchers.IO) {
-            Thread.sleep(10000)
-        }
-
-
-//        val originMiraiQuoteReply = messages[MiraiQuoteReply].firstOrNull()?.originalMiraiMessage
-//            ?: messages.firstNotNullOf { element ->
-//                (element as? SimbotOriginalMiraiMessage)?.originalMiraiMessage as? QuoteReply
-//            }
-//        try {
-//            originMiraiQuoteReply.source.recall()
-//
-        messageContent.delete()
-//
-//            val msg =
-//                "「${author().nickOrUsername}」 通过bot撤回了一条消息"
-//            send(msg)
-//        } catch (e: PermissionDeniedException) {
-//            send("我无权操作此消息")
-//        } catch (e: Exception) {
-//            send("撤回失败，无法撤回此消息：${e.message}")
-//        }
-    }
 }

@@ -217,8 +217,13 @@ class GachaData {
             probability = 50.0
             aveFive = "--"
         }
-        if (count > 73 && GachaMain.dataArray.size == 0) {
-            probability = 20.0
+
+        if (GachaMain.dataArray.size == 0) {
+            probability = if (count < 73) {
+                50.0
+            } else {
+                20.0
+            }
             aveFive = "--"
         } else {
             right = if (gachaType == 200) GachaMain.dataArray.size else right
@@ -234,4 +239,9 @@ class GachaData {
         finCount += count
         finItem += GachaMain.dataArray.size
     }
+
+    /**
+     * 计算每个卡池中不同物品的抽数与实际概率之间的差距，正差距越大运气越差，负差距越大运气越好
+     */
+
 }

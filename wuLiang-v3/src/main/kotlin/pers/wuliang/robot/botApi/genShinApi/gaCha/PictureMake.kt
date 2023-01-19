@@ -2,6 +2,7 @@ package pers.wuliang.robot.botApi.genShinApi.gaCha
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import net.coobird.thumbnailator.Thumbnails
 import java.awt.*
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
@@ -33,9 +34,11 @@ class PictureMake {
             return imageCache[imagePath]!!
         }
 
-        var bi = ImageIO.read(URL(GachaConfig.galleryPath + imagePath.urlCode))
-        if (bi == null) {
-            bi = ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/default1.png".urlCode))
+        val bi: BufferedImage = try {
+            ImageIO.read(URL(GachaConfig.galleryPath + imagePath.urlCode))
+        } catch (e: Exception) {
+            println("图片获取失败：$imagePath")
+            ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/default1.png".urlCode))
         }
         val parent = img.parentFile
         if (!parent.exists()) {
@@ -43,6 +46,7 @@ class PictureMake {
         }
         ImageIO.write(bi, "png", img)
         imageCache[imagePath] = bi
+
         return bi
     }
 
@@ -256,7 +260,7 @@ class PictureMake {
 
         // 转换成InputStream输出
         val byStream = ByteArrayOutputStream()
-        ImageIO.write(newBg, "png", byStream)
+        ImageIO.write(Thumbnails.of(newBg).scale(0.25).asBufferedImage(), "png", byStream)
 
         return ByteArrayInputStream(byStream.toByteArray())
     }

@@ -16,14 +16,20 @@ server:
 
 wuLiang:
   config:
+    # 图床路径，用于自动更新图片
     gallery: "https://cdn.jsdelivr.net/gh/2094085327/GenShinImage/"
+    # 原神本地图片路径
+    localPath: "resources/Image/Genshin/"
+
 ##配置数据源
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/wuliang?useSSL=FALSE&serverTimezone=GMT%2B8
+    #    url: jdbc:mysql://localhost:3306/wuliang?useSSL=FALSE&serverTimezone=GMT%2B8
+    url: jdbc:mysql://47.113.200.76:16384/wuliang?useSSL=FALSE&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
     username: root
-    password: M:JnTmZJJ54381234qq:Y
+    #    password: M:JnTmZJJ54381234qq:Y
+    password: root
     type: com.alibaba.druid.pool.DruidDataSource # 自定义数据源
     initialSize: 5
     minIdle: 5
