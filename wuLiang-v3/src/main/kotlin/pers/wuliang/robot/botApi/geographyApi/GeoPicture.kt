@@ -1,5 +1,6 @@
 package pers.wuliang.robot.botApi.geographyApi
 
+import net.coobird.thumbnailator.Thumbnails
 import java.awt.*
 import java.awt.image.BufferedImage
 import java.io.File
@@ -189,7 +190,7 @@ class GeoPicture {
 
         gd.dispose()
         ImageIO.write(
-            image, "png",
+            Thumbnails.of(image).scale(0.75).asBufferedImage(), "png",
             File(GeoConfig.Path.weather).absoluteFile
         )
     }

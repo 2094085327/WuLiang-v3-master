@@ -2,7 +2,7 @@ package pers.wuliang.robot.dataBase.mapper
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper
 import org.apache.ibatis.annotations.Mapper
-import pers.wuliang.robot.dataBase.enity.Messages
+import pers.wuliang.robot.dataBase.entity.Messages
 
 /**
  *@Description: 消息存储的Mapper

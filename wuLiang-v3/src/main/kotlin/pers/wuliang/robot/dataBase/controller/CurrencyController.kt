@@ -9,7 +9,7 @@ import love.forte.simbot.event.GroupMessageEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import pers.wuliang.robot.core.annotation.RobotListen
-import pers.wuliang.robot.dataBase.enity.Currency
+import pers.wuliang.robot.dataBase.entity.Currency
 import pers.wuliang.robot.dataBase.mapper.CurrencyMapper
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime

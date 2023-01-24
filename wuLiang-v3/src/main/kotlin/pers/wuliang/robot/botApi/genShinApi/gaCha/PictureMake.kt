@@ -20,6 +20,7 @@ import kotlin.math.ceil
  *@Date 2022/12/16 11:26
  *@User 86188
  */
+
 class PictureMake {
 
     private val imageCache = mutableMapOf<String, BufferedImage>()
@@ -56,6 +57,7 @@ class PictureMake {
      * @param newHeight 图片新高度
      * @param newWidth 图片新宽度
      */
+    @Suppress("unused")
     fun resizeProImage(imagePath: String, newWidth: Int, newHeight: Int): BufferedImage? {
         val imageUrl = URL(GachaConfig.galleryPath + imagePath.urlCode)
         val image = ImageIO.read(imageUrl)
@@ -106,15 +108,37 @@ class PictureMake {
      * 根据概率判断运气等级
      * @param probability 概率
      */
-    private fun choseLuck(probability: Double? = GachaData.probability): BufferedImage {
+    private fun choseLuck(probability: Float): BufferedImage {
         val luck: String = when {
-            probability!! > 80 -> "欧"
+            probability > 80 -> "欧"
             probability > 60 -> "吉"
             probability > 40 -> "平"
             probability > 20 -> "惨"
             else -> "寄"
         }
         return judgeImg("运气图片/${luck}.png")
+    }
+
+    /**
+     * 计算卡池出货的运气
+     */
+    private fun calculateLuck(gachaType: String, allCount: Int, rightCount: Int, averageCount: String): BufferedImage {
+
+        val guaranteedP = (allCount - rightCount) / allCount.toFloat()
+        val gachaTool = GachaTool.instance
+
+        var probability: Float = when (gachaType) {
+            "常驻" -> (1 - (averageCount.toFloat() / 90)) * 100f
+            "角色" -> ((1 - (averageCount.toFloat() / 90) + guaranteedP * 0.5) * 100).toFloat()
+            "武器" -> ((1 - (averageCount.toFloat() / 80) + guaranteedP * 0.5) * 100).toFloat()
+            else -> 0f
+        }
+        if (probability.isNaN()){
+            probability = 50f
+        }
+
+        gachaTool.finalProbability += probability * (1f / 3)
+        return choseLuck(probability)
     }
 
     /**
@@ -125,13 +149,13 @@ class PictureMake {
         val white = judgeImg("其他图片/withe.png")
         val string2 = judgeImg("其他图片/${gachaType}文字.png")
         val countWhite = judgeImg("其他图片/计数块.png")
-        val luckImage = choseLuck()
+        val gachaTool = GachaTool.instance
 
-        val lines = ceil((GachaMain.dataArray.size / 7.0))
+        val lines = ceil((gachaTool.dataArray.size / 7.0))
         val newWhite = resizeImage(white, white.width, (white.height + 506 * lines + 60 * lines).toInt())
         // 创建绘画对象
         val gd: Graphics2D = newWhite.createGraphics()
-        gd.drawImage(luckImage, 58, 58, luckImage.width, luckImage.height, null)
+
         gd.drawImage(string2, 1112, 100, string2.width, string2.height, null)
 
         var roleX = 58
@@ -141,8 +165,8 @@ class PictureMake {
 
         runBlocking {
             // 并行下载图像
-            val images = GachaMain.dataArray.map {
-                async { judgeImg("${gachaType}图片/${it.key}.png") }
+            val images = gachaTool.dataArray.filter { it.key != "已抽次数" }.map {
+                async { judgeImg("${gachaType}图片/${it.key.split("-")[1]}.png") }
             }
 
             images.forEachIndexed { index, deferredImage ->
@@ -151,7 +175,7 @@ class PictureMake {
                 gd.drawImage(
                     roleImage,
                     roleX + roleImage.width * (lineX - 1),
-                    luckImage.height + 106 + (roleImage.height + 50) * (n - 1),
+                    1032 + (roleImage.height + 50) * (n - 1),
                     roleImage.width,
                     roleImage.height,
                     null
@@ -160,7 +184,7 @@ class PictureMake {
                 gd.drawImage(
                     countWhite,
                     roleX + roleImage.width * (lineX - 1),
-                    luckImage.height + 482 + (roleImage.height + 50) * (n - 1),
+                    1409 + (roleImage.height + 50) * (n - 1),
                     countWhite.width,
                     countWhite.height,
                     null
@@ -171,9 +195,9 @@ class PictureMake {
                 gd.font = Font("汉仪青云简", Font.ITALIC, 100)
 
                 gd.drawString(
-                    GachaMain.dataArray[index].value.toString(),
+                    gachaTool.dataArray[index + 1].value.toString(),
                     roleX + 147 + roleImage.width * (lineX - 1),
-                    luckImage.height + 575 + (roleImage.height + 50) * (n - 1)
+                    1502 + (roleImage.height + 50) * (n - 1)
                 )
                 roleX += 52
                 counts++
@@ -186,20 +210,37 @@ class PictureMake {
                 }
             }
         }
+        val used = gachaTool.dataArray.find { it.key == "已抽次数" }?.value
+        val totalTimes: Int
+        val averTimes: String
+        val rightTimes: Int
+        if (gachaTool.dataArray.size == 1) {
+            totalTimes = used!!
+            averTimes = "0"
+            rightTimes = 0
+        } else {
+            totalTimes = gachaTool.dataArray.sumOf { it.value }
+            averTimes =
+                String.format("%.1f", ((totalTimes.toFloat() - used!!) / (gachaTool.dataArray.size - 1).toFloat()))
+            rightTimes = gachaTool.dataArray.count { !it.toString().contains("(歪)") || (gachaType == "常驻") } - 1
+        }
+
+        gachaTool.allTimes += totalTimes
+        gachaTool.allRightTimes += gachaTool.dataArray.size - 1
+
+        val luckImage = calculateLuck(gachaType, totalTimes - used, rightTimes, averTimes)
+        gd.drawImage(luckImage, 58, 58, luckImage.width, luckImage.height, null)
+
         gd.color = Color.BLACK
         gd.font = Font("微软雅黑", Font.ITALIC, 206)
-        gd.drawString(GachaData.aveFive, 1218, 770)
-        gd.drawString(GachaData.count.toString(), 1910, 770)
-        gd.drawString("${GachaData.right}/${GachaMain.dataArray.size}", 2575, 770)
+        gd.drawString(averTimes, 1218, 770)
+        gd.drawString(totalTimes.toString(), 1910, 770)
+        gd.drawString("${rightTimes}/${gachaTool.dataArray.size - 1}", 2575, 770)
 
         gd.color = Color(255, 192, 0)
         gd.font = Font("微软雅黑", Font.ITALIC, 101)
-        gd.drawString(GachaData.haveCost.toString(), 1336, 412)
+        gd.drawString(used.toString(), 1336, 412)
         gd.dispose()
-        GachaData.count = 0
-        GachaData.haveCost = 0
-        GachaData.right = 0
-
         return newWhite
     }
 
@@ -209,17 +250,22 @@ class PictureMake {
     fun allDataMake(): BufferedImage {
         val white = judgeImg("其他图片/withe.png")
         val allData = judgeImg("其他图片/总数据.png")
-        val luckImage = choseLuck()
-
+        val gachaTool = GachaTool.instance
+        val luckImage = choseLuck(gachaTool.finalProbability)
         val gd = white.createGraphics()
         gd.drawImage(luckImage, 58, 58, luckImage.width, luckImage.height, null)
         gd.drawImage(allData, 1112, 100, allData.width, allData.height, null)
 
         gd.color = Color.BLACK
         gd.font = Font("微软雅黑", Font.ITALIC, 206)
-        gd.drawString(String.format("%.1f", GachaData.finCount / GachaData.finItem.toFloat()), 1190, 770)
-        gd.drawString(GachaData.finCount.toString(), 1864, 770)
-        gd.drawString(GachaData.finItem.toString(), 2591, 770)
+
+        gd.drawString(
+            String.format("%.1f", gachaTool.allTimes.toFloat() / gachaTool.allRightTimes.toFloat()),
+            1190,
+            770
+        )
+        gd.drawString(gachaTool.allTimes.toString(), 1864, 770)
+        gd.drawString(gachaTool.allRightTimes.toString(), 2591, 770)
         gd.dispose()
         return white
     }
@@ -260,8 +306,10 @@ class PictureMake {
 
         // 转换成InputStream输出
         val byStream = ByteArrayOutputStream()
-        ImageIO.write(Thumbnails.of(newBg).scale(0.25).asBufferedImage(), "png", byStream)
+        ImageIO.write(Thumbnails.of(newBg).scale(0.5).asBufferedImage(), "png", byStream)
 
         return ByteArrayInputStream(byStream.toByteArray())
     }
+
+    // TODO 调整文字位置，实现自适应
 }

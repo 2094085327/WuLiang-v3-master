@@ -1,4 +1,4 @@
-package pers.wuliang.robot.dataBase.enity
+package pers.wuliang.robot.dataBase.entity
 
 import com.baomidou.mybatisplus.annotation.IdType
 import com.baomidou.mybatisplus.annotation.TableField
@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor
 import lombok.NoArgsConstructor
 import lombok.ToString
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 /**
  *@Description: 群聊消息实体类

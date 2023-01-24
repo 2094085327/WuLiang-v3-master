@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import pers.wuliang.robot.util.HttpUtil
 
-var objectMapper = ObjectMapper()
 
 /**
  *@Description: 数据处理类
@@ -13,19 +12,9 @@ var objectMapper = ObjectMapper()
  *@User 86188
  */
 class GachaData {
-    private val baseUrl = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/"
+    private var objectMapper = ObjectMapper()
 
-    companion object {
-        private val r5Array = mutableListOf<String>()
-        var count: Int = 0
-        var haveCost: Int = 0
-        var right: Int = 0
-        var probability: Double = 0.0
-        var aveFive: String = ""
-        var finProbability: Double = 0.0
-        var finCount: Int = 0
-        var finItem: Int = 0
-    }
+    private val baseUrl = "https://webstatic.mihoyo.com/hk4e/gacha_info/cn_gf01/"
 
     /**
      * 返回卡池id
@@ -57,6 +46,7 @@ class GachaData {
      * @param data JsonNode类的数据
      * @param gachaType 卡池类型
      */
+    @Suppress("SameParameterValue")
     private fun getGachaId(data: JsonNode, gachaType: Int): String {
         for (list in data) {
             if (list["gacha_type"].intValue() == gachaType)
@@ -108,6 +98,7 @@ class GachaData {
         val data = objectMapper.readTree(HttpUtil.get(url).response)
         if (data.has("retcode")) {
             if (data["message"].textValue().equals("OK")) {
+                GachaTool.instance.uid = data["data"]["list"][0]["uid"].textValue()
                 return "验证通过，开始进行分析。请耐心等待，视抽卡数约需要30秒至1分钟"
             }
             if (data["message"].textValue().equals("authkey error")) {
@@ -126,36 +117,43 @@ class GachaData {
     /**
      * 常驻池中常驻角色与物品
      */
-    fun getPermanentData() {
+    fun getPermanentData(): MutableList<String> {
         val infoList = getInfoList()
         val gachaId = getGachaId(infoList, 200)
         val data = getGachaInfo(gachaId)["r5_prob_list"]
+        val r5Array = mutableListOf<String>()
         for (item in data) {
             if (item["is_up"].intValue() == 0) {
                 r5Array.add(item["item_name"].textValue())
             }
         }
+        return r5Array
     }
 
     data class ItemData(val key: String, val value: Int)
 
     /**
      * 将数据存入ItemData数据类中
-     * @param role 存储着角色信息的数组
-     * @param count 存储着每个角色对应抽数的数组
+     * @param item 存储着物品信息的数组
+     * @param count 存储着每个物品对应抽数的数组
      */
-    private fun createItemData(role: Array<String>, count: Array<Int>): MutableList<ItemData> {
-        val itemList = mutableListOf<ItemData>()
-        haveCost = count[0]
-        for (i in role.indices) {
-            if (r5Array.contains(role[i])) {
-                itemList.add(ItemData("${role[i]}(歪)", count[i + 1] + 1))
+    private fun createItemData(
+        item: ArrayList<String>,
+        count: Array<Int>,
+        r5Array: MutableList<String>
+    ): MutableList<ItemData> {
+        val itemLists: ArrayList<ItemData> = arrayListOf()
+        for (i in item.indices) {
+            val itemName = item[i].split("-")[1]
+
+            if (r5Array.contains(itemName)) {
+                itemLists.add(ItemData("${item[i]}(歪)", count[i + 1] + 1))
             } else {
-                itemList.add(ItemData(role[i], count[i + 1] + 1))
-                right += 1
+                itemLists.add(ItemData(item[i], count[i + 1] + 1))
             }
         }
-        return itemList
+        itemLists.add(ItemData("已抽次数", count[0]))
+        return itemLists
     }
 
     /**
@@ -168,17 +166,16 @@ class GachaData {
         var endId = "0"
         // 总抽数，大保底次数，至五星为止的次数，已抽数，5星个数
         var alreadyCost = 0
-        var roleList: Array<String> = arrayOf()
         var costList: Array<Int> = arrayOf()
+        val itemList: ArrayList<String> = arrayListOf()
+        val r5Array = getPermanentData()
         try {
             for (i in 1..9999) {
                 // 接口URL地址
                 val urls: String = getUrl(url, gachaType, i, endId)
-
                 // 请求json数据
                 val data = objectMapper.readTree(HttpUtil.get(urls).response)["data"]
                 val length: Int = data["list"].size()
-                count += length
 
                 // 当数组长度为0时(即没有抽卡记录时)跳出循环
                 if (length == 0) {
@@ -188,10 +185,9 @@ class GachaData {
                 }
                 endId = data["list"][length - 1]["id"].textValue()
                 data["list"].forEach { item ->
-                    val rankType: String = item["rank_type"].textValue()
-                    if (rankType == "5") {
+                    if (item["rank_type"].textValue() == "5") {
                         costList += alreadyCost
-                        roleList += item["name"].textValue()
+                        itemList.add("${item["id"].textValue()}-${item["name"].textValue()}")
                         alreadyCost = 0
                     } else {
                         alreadyCost += 1
@@ -203,45 +199,6 @@ class GachaData {
             e.printStackTrace()
         }
         println("--卡池:$gachaType 分析完成--")
-        return createItemData(roleList, costList)
+        return createItemData(itemList, costList, r5Array)
     }
-
-    /**
-     * 获取每个卡池对应的概率
-     * @param times 每个卡池的保底次数
-     * @param gachaType 卡池类型
-     */
-    fun getProbability(times: Int, gachaType: Int) {
-        // 欧非判断公式 以(1-平均出金数/90)+(不歪的几率*50%) 作为概率
-        if (count == 0) {
-            probability = 50.0
-            aveFive = "--"
-        }
-
-        if (GachaMain.dataArray.size == 0) {
-            probability = if (count < 73) {
-                50.0
-            } else {
-                20.0
-            }
-            aveFive = "--"
-        } else {
-            right = if (gachaType == 200) GachaMain.dataArray.size else right
-            probability =
-                (1 - (count.toFloat() / GachaMain.dataArray.size) / times + (right.toFloat() / GachaMain.dataArray.size) * 0.5) * 100
-            aveFive =
-                if (GachaMain.dataArray.size == 1) GachaMain.dataArray[0].value.toFloat().toString() else String.format(
-                    "%.1f",
-                    count.toFloat() / GachaMain.dataArray.size
-                )
-        }
-        finProbability += probability
-        finCount += count
-        finItem += GachaMain.dataArray.size
-    }
-
-    /**
-     * 计算每个卡池中不同物品的抽数与实际概率之间的差距，正差距越大运气越差，负差距越大运气越好
-     */
-
 }

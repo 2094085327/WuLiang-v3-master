@@ -1,4 +1,4 @@
-package pers.wuliang.robot.dataBase.enity
+package pers.wuliang.robot.dataBase.entity
 
 import com.baomidou.mybatisplus.annotation.IdType
 import com.baomidou.mybatisplus.annotation.TableField
