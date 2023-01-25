@@ -4,6 +4,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import net.coobird.thumbnailator.Thumbnails
 import java.awt.*
+import java.awt.font.TextLayout
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -133,7 +134,7 @@ class PictureMake {
             "武器" -> ((1 - (averageCount.toFloat() / 80) + guaranteedP * 0.5) * 100).toFloat()
             else -> 0f
         }
-        if (probability.isNaN()){
+        if (probability.isNaN()) {
             probability = 50f
         }
 
@@ -142,7 +143,20 @@ class PictureMake {
     }
 
     /**
-     *返回每个池子的数据
+     * 计算文字位置使其居中
+     * @param gd 画笔
+     * @param text 文字
+     * @param centerX 中心点x坐标
+     * @param y y坐标
+     */
+    private fun textPosition(gd: Graphics2D, text: String, centerX: Float, y: Float) {
+        val layout = TextLayout(text, gd.font, gd.fontRenderContext)
+        val x = centerX - layout.bounds.width / 2
+        layout.draw(gd, x.toFloat(), y)
+    }
+
+    /**
+     *返回每个池子的BufferedImage
      * @param gachaType 池子类型
      */
     fun poolImage(gachaType: String): BufferedImage {
@@ -190,7 +204,6 @@ class PictureMake {
                     null
                 )
 
-                // 设置画笔颜色为黑色，画笔字体样式为微软雅黑，斜体，文字大小为20px
                 gd.color = Color(89, 87, 87)
                 gd.font = Font("汉仪青云简", Font.ITALIC, 100)
 
@@ -232,14 +245,14 @@ class PictureMake {
         gd.drawImage(luckImage, 58, 58, luckImage.width, luckImage.height, null)
 
         gd.color = Color.BLACK
-        gd.font = Font("微软雅黑", Font.ITALIC, 206)
-        gd.drawString(averTimes, 1218, 770)
-        gd.drawString(totalTimes.toString(), 1910, 770)
-        gd.drawString("${rightTimes}/${gachaTool.dataArray.size - 1}", 2575, 770)
+        gd.font = Font("微软雅黑", Font.PLAIN, 206)
+        textPosition(gd, averTimes, 1400f, 770f)
+        textPosition(gd, totalTimes.toString(), 2080f, 770f)
+        textPosition(gd, "${rightTimes}/${gachaTool.dataArray.size - 1}", 2735f, 770f)
 
         gd.color = Color(255, 192, 0)
-        gd.font = Font("微软雅黑", Font.ITALIC, 101)
-        gd.drawString(used.toString(), 1336, 412)
+        gd.font = Font("微软雅黑", Font.PLAIN, 101)
+        textPosition(gd, used.toString(), 1400f, 412f)
         gd.dispose()
         return newWhite
     }
@@ -257,15 +270,16 @@ class PictureMake {
         gd.drawImage(allData, 1112, 100, allData.width, allData.height, null)
 
         gd.color = Color.BLACK
-        gd.font = Font("微软雅黑", Font.ITALIC, 206)
+        gd.font = Font("微软雅黑", Font.PLAIN, 206)
 
-        gd.drawString(
+        textPosition(
+            gd,
             String.format("%.1f", gachaTool.allTimes.toFloat() / gachaTool.allRightTimes.toFloat()),
-            1190,
-            770
+            1400f,
+            770f
         )
-        gd.drawString(gachaTool.allTimes.toString(), 1864, 770)
-        gd.drawString(gachaTool.allRightTimes.toString(), 2591, 770)
+        textPosition(gd, gachaTool.allTimes.toString(), 2080f, 770f)
+        textPosition(gd, gachaTool.allRightTimes.toString(), 2735f, 770f)
         gd.dispose()
         return white
     }
@@ -307,9 +321,6 @@ class PictureMake {
         // 转换成InputStream输出
         val byStream = ByteArrayOutputStream()
         ImageIO.write(Thumbnails.of(newBg).scale(0.5).asBufferedImage(), "png", byStream)
-
         return ByteArrayInputStream(byStream.toByteArray())
     }
-
-    // TODO 调整文字位置，实现自适应
 }

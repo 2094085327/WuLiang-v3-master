@@ -2,14 +2,8 @@ logging:
   level:
     love.forte: Info
 
-
-#茉莉人工智能
-mlyaiuse:
-  apikey: nv7f9p305nkuxhls
-  apisecret: 95c83lzt
-
 weather:
-  key: "1b48b4a69c8a4f7cb17674cbf4cea29b"
+  key: ""
 
 server:
   port: 9898
@@ -25,10 +19,8 @@ wuLiang:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    #    url: jdbc:mysql://localhost:3306/wuliang?useSSL=FALSE&serverTimezone=GMT%2B8
-    url: jdbc:mysql://47.113.200.76:16384/wuliang?useSSL=FALSE&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/wuliang?useSSL=FALSE&serverTimezone=GMT%2B8
     username: root
-    #    password: M:JnTmZJJ54381234qq:Y
     password: root
     type: com.alibaba.druid.pool.DruidDataSource # 自定义数据源
     initialSize: 5
@@ -60,7 +52,6 @@ spring:
       login-username: admin
       login-password: admin
       allow: 127.0.0.1
-      #deny: 192.168.1.100
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
@@ -69,4 +60,12 @@ mybatis:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     banner: false
+    db-config:
+      id-type: auto
+      field-strategy: not_empty
+      table-fill-list:
+        - field:createdAt
+          strategy:always
+        - field:updatedAt
+          strategy:always
 
