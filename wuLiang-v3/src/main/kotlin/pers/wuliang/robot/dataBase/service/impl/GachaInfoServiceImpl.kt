@@ -30,7 +30,6 @@ class GachaInfoServiceImpl : ServiceImpl<GachaInfoMapper?, GachaInfo?>(), GachaI
             for (itemInfo in gachaBefore) {
                 if (itemInfo != null) {
                     val gachaArray = GachaData.ItemData(
-//                        key = itemInfo.itemName!!.split("-")[1],
                         key = itemInfo.itemName.toString(),
                         value = itemInfo.times!!.toInt()
                     )
@@ -41,31 +40,31 @@ class GachaInfoServiceImpl : ServiceImpl<GachaInfoMapper?, GachaInfo?>(), GachaI
         }
     }
 
+    override fun selectByUid(uid: String): Boolean {
+        val queryWrapper = QueryWrapper<GachaInfo>().eq("uid", uid)
+        val gachaInfo = gachaInfoMapper.selectList(queryWrapper)
+        return gachaInfo.size != 0
+    }
+
     override fun insertByUid(uid: String, type: String, itemName: String, times: Int) {
+        val gachaInfo = GachaInfo(
+            uid = uid,
+            gachaType = type,
+            itemName = itemName,
+            times = times,
+            updateTime = System.currentTimeMillis().toString()
+        )
         val queryWrapper = QueryWrapper<GachaInfo>()
             .eq("uid", uid)
             .eq("type", type)
             .eq("item_name", itemName)
-            .eq("times", times)
-
-        val haveCostWrapper = QueryWrapper<GachaInfo>()
-            .eq("uid", uid)
-            .eq("type", type)
-            .eq("item_name", "已抽次数")
-        if (gachaInfoMapper.selectOne(haveCostWrapper) == null) {
-            gachaInfoMapper.update(GachaInfo(times = times), haveCostWrapper)
-        }
-
-        if (gachaInfoMapper.selectOne(queryWrapper) == null) {
-            GachaInfo(
-                uid = uid,
-                gachaType = type,
-                itemName = itemName,
-                times = times,
-                updateTime = System.currentTimeMillis().toString()
-            ).let {
-                gachaInfoMapper.insert(it)
+        val existGachaInfo = gachaInfoMapper.selectOne(queryWrapper)
+        if (existGachaInfo != null) {
+            if (itemName == "已抽次数") {
+                gachaInfoMapper.update(gachaInfo, queryWrapper)
             }
+        } else {
+            gachaInfoMapper.insert(gachaInfo)
         }
     }
 }

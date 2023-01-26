@@ -12,6 +12,7 @@ import pers.wuliang.robot.core.annotation.RobotListen
 import pers.wuliang.robot.core.common.send
 import pers.wuliang.robot.dataBase.service.GachaInfoService
 import pers.wuliang.robot.dataBase.service.GenshininfoService
+import java.awt.image.BufferedImage
 
 /**
  *@Description: 抽卡分析的主类
@@ -28,13 +29,51 @@ class GachaMain {
     lateinit var gachaInfoService: GachaInfoService
 
     /**
+     * 在循环中获取数据
+     * @param gachaData 数据类
+     * @param gachaTool 工具类
+     * @param cleanUrl 处理后的抽卡链接
+     */
+    fun GroupMessageEvent.getDataInLoop(gachaData: GachaData, gachaTool: GachaTool, cleanUrl: String) {
+        val typeMap = mapOf("角色" to "role", "武器" to "weapon", "常驻" to "permanent")
+        val poolDataList: ArrayList<BufferedImage> = arrayListOf()
+        for ((key, value) in typeMap) {
+            gachaTool.dataArray = gachaData.getGachaData(cleanUrl, gachaData.getGaChaType("${key}池"))
+            integrationData(value)
+            poolDataList.add(PictureMake().poolImage(key))
+            send("${key}池分析完成")
+        }
+        val totalData = PictureMake().allDataMake()
+        val allImage = PictureMake().compositePicture(totalData, poolDataList[0], poolDataList[1], poolDataList[2])
+        send(allImage.toResource().toImage())
+
+        gachaTool.reset()
+    }
+
+    fun GroupMessageEvent.getDataInLoop(uid: String) {
+        val typeMap = mapOf("角色" to "role", "武器" to "weapon", "常驻" to "permanent")
+        val poolDataList: ArrayList<BufferedImage> = arrayListOf()
+        val gachaTool = GachaTool.instance
+        for ((key, value) in typeMap) {
+            gachaTool.dataArray = gachaInfoService.selectByUid(uid, value) as MutableList<GachaData.ItemData>
+            poolDataList.add(PictureMake().poolImage(key))
+        }
+        val totalData = PictureMake().allDataMake()
+        val allImage = PictureMake().compositePicture(totalData, poolDataList[0], poolDataList[1], poolDataList[2])
+        send(allImage.toResource().toImage())
+        gachaTool.reset()
+    }
+
+    /**
      * 整合历史数据和新数据
+     * @param type 数据类型
      */
     fun integrationData(type: String) {
         val gachaTool = GachaTool.instance
         val list = gachaInfoService.selectByUid(gachaTool.uid, type) as MutableList<GachaData.ItemData>
+        list.removeIf { it.key == "已抽次数" }
         // 将两个List合并后去重
-        gachaTool.dataArray = (  gachaTool.dataArray+list).distinct().toMutableList()
+        gachaTool.dataArray = (gachaTool.dataArray + list).distinct().toMutableList()
         for (itemData in gachaTool.dataArray) {
             val itemName = itemData.key
             val times = itemData.value
@@ -60,28 +99,7 @@ class GachaMain {
                 sToken = cleanUrl,
                 state = 1
             )
-
-            gachaTool.dataArray = gachaData.getGachaData(cleanUrl, gachaData.getGaChaType("角色池"))
-            integrationData("role")
-            val roleData = PictureMake().poolImage("角色")
-            send("角色池分析完成")
-
-            gachaTool.dataArray = gachaData.getGachaData(cleanUrl, GachaData().getGaChaType("武器池"))
-            integrationData("weapon")
-            val armsData = PictureMake().poolImage("武器")
-            send("武器池分析完成")
-
-            gachaTool.dataArray = gachaData.getGachaData(cleanUrl, GachaData().getGaChaType("常驻池"))
-            integrationData("permanent")
-            val perData = PictureMake().poolImage("常驻")
-            send("常驻池分析完成")
-            val totalData = PictureMake().allDataMake()
-            val allImage = PictureMake().compositePicture(totalData, roleData, armsData, perData)
-
-
-            send(allImage.toResource().toImage())
-
-            gachaTool.reset()
+            getDataInLoop(gachaData, gachaTool, cleanUrl)
         } else {
             send(replyMsg)
         }
@@ -105,26 +123,7 @@ class GachaMain {
                 val replyMsg = gachaData.checkUrl(newUrl)
                 if (replyMsg.contains("验证通过")) {
                     send(replyMsg)
-                    gachaTool.dataArray = gachaData.getGachaData(message, GachaData().getGaChaType("角色池"))
-                    integrationData("role")
-                    val roleData = PictureMake().poolImage("角色")
-                    send("角色池分析完成")
-
-                    gachaTool.dataArray = gachaData.getGachaData(message, GachaData().getGaChaType("武器池"))
-                    integrationData("weapon")
-                    val armsData = PictureMake().poolImage("武器")
-                    send("武器池分析完成")
-
-                    gachaTool.dataArray = gachaData.getGachaData(message, GachaData().getGaChaType("常驻池"))
-                    integrationData("permanent")
-                    val perData = PictureMake().poolImage("常驻")
-                    send("常驻池分析完成")
-                    val totalData = PictureMake().allDataMake()
-                    val allImage = PictureMake().compositePicture(totalData, roleData, armsData, perData)
-
-                    send(allImage.toResource().toImage())
-
-                    gachaTool.reset()
+                    getDataInLoop(gachaData, gachaTool, message)
                 } else {
                     send(replyMsg)
                 }
@@ -135,24 +134,10 @@ class GachaMain {
     @RobotListen(desc = "根据uid查询")
     @Filter(">历史记录{{uid}}", matchType = MatchType.REGEX_MATCHES)
     suspend fun GroupMessageEvent.getByUid(@FilterValue("uid") uid: String) {
-        val gachaTool = GachaTool.instance
-
-        gachaTool.dataArray = gachaInfoService.selectByUid(uid, "role") as MutableList<GachaData.ItemData>
-        val roleData = PictureMake().poolImage("角色")
-
-
-        gachaTool.dataArray = gachaInfoService.selectByUid(uid, "weapon") as MutableList<GachaData.ItemData>
-        val armsData = PictureMake().poolImage("武器")
-
-
-        gachaTool.dataArray = gachaInfoService.selectByUid(uid, "permanent") as MutableList<GachaData.ItemData>
-        val perData = PictureMake().poolImage("常驻")
-
-        val totalData = PictureMake().allDataMake()
-        val allImage = PictureMake().compositePicture(totalData, roleData, armsData, perData)
-
-        send(allImage.toResource().toImage())
-
-        gachaTool.reset()
+        if (gachaInfoService.selectByUid(uid)) {
+            getDataInLoop(uid)
+        } else {
+            reply("这个UID还未分析过，没有抽卡记录哦")
+        }
     }
 }
