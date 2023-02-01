@@ -140,8 +140,8 @@ class GachaData {
     private fun createItemData(
         item: ArrayList<String>,
         count: Array<Int>,
-        r5Array: MutableList<String>
     ): MutableList<ItemData> {
+        val r5Array = getPermanentData()
         val itemLists: ArrayList<ItemData> = arrayListOf()
         for (i in item.indices) {
             val itemName = item[i].split("-")[1]
@@ -168,7 +168,7 @@ class GachaData {
         var alreadyCost = 0
         var costList: Array<Int> = arrayOf()
         val itemList: ArrayList<String> = arrayListOf()
-        val r5Array = getPermanentData()
+
         try {
             for (i in 1..9999) {
                 // 接口URL地址
@@ -199,6 +199,6 @@ class GachaData {
             e.printStackTrace()
         }
         println("--卡池:$gachaType 分析完成--")
-        return createItemData(itemList, costList, r5Array)
+        return createItemData(itemList, costList)
     }
 }

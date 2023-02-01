@@ -8,11 +8,13 @@ import love.forte.simbot.message.Image.Key.toImage
 import love.forte.simbot.resources.Resource.Companion.toResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import pers.wuliang.robot.botApi.genShinApi.makeRes.MakeWeapon
 import pers.wuliang.robot.core.annotation.RobotListen
 import pers.wuliang.robot.core.common.send
 import pers.wuliang.robot.dataBase.service.GachaInfoService
 import pers.wuliang.robot.dataBase.service.GenshininfoService
 import java.awt.image.BufferedImage
+import java.io.File
 
 /**
  *@Description: 抽卡分析的主类
@@ -74,6 +76,8 @@ class GachaMain {
         list.removeIf { it.key == "已抽次数" }
         // 将两个List合并后去重
         gachaTool.dataArray = (gachaTool.dataArray + list).distinct().toMutableList()
+        gachaTool.dataArray =
+            (gachaTool.dataArray.filter { it.key == "已抽次数" } + gachaTool.dataArray.filter { it.key != "已抽次数" }) as MutableList<GachaData.ItemData>
         for (itemData in gachaTool.dataArray) {
             val itemName = itemData.key
             val times = itemData.value
@@ -118,7 +122,7 @@ class GachaMain {
             else -> {
                 val gachaData = GachaData()
                 val gachaType = gachaData.getGaChaType("up池1")
-                gachaData.getPermanentData()
+//                gachaData.getPermanentData()
                 val newUrl = gachaData.getUrl(url = message, gachaType = gachaType, times = 1, endId = "0")
                 val replyMsg = gachaData.checkUrl(newUrl)
                 if (replyMsg.contains("验证通过")) {
@@ -134,10 +138,28 @@ class GachaMain {
     @RobotListen(desc = "根据uid查询")
     @Filter(">历史记录{{uid}}", matchType = MatchType.REGEX_MATCHES)
     suspend fun GroupMessageEvent.getByUid(@FilterValue("uid") uid: String) {
-        if (gachaInfoService.selectByUid(uid)) {
-            getDataInLoop(uid)
+        if (gachaInfoService.selectByUid(uid.replace(" ", ""))) {
+            getDataInLoop(uid.replace(" ", ""))
         } else {
             reply("这个UID还未分析过，没有抽卡记录哦")
         }
     }
+
+    @RobotListen(desc = "图片测试")
+    @Filter(">合成武器图片{{name}}", matchType = MatchType.REGEX_MATCHES)
+    suspend fun GroupMessageEvent.getImage(@FilterValue("name") name: String) {
+        var newName = name
+        if (GachaData().getPermanentData().contains(name)) {
+            newName = "$name(歪)"
+        }
+        val img = File("${GachaConfig.localPath}/武器图片/${newName}.png").absoluteFile
+        if (img.exists()) {
+            send("这张武器图片已经存在了，不需要再次合成")
+        } else {
+            MakeWeapon().makeImg(name)
+            send("合成完成")
+        }
+    }
+
+
 }

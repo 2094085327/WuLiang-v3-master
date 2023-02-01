@@ -3,6 +3,7 @@ package pers.wuliang.robot.botApi.genShinApi.gaCha
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import net.coobird.thumbnailator.Thumbnails
+import pers.wuliang.robot.botApi.genShinApi.makeRes.MakeWeapon
 import java.awt.*
 import java.awt.font.TextLayout
 import java.awt.image.BufferedImage
@@ -26,7 +27,7 @@ class PictureMake {
 
     private val imageCache = mutableMapOf<String, BufferedImage>()
 
-    private fun judgeImg(imagePath: String): BufferedImage {
+    fun judgeImg(imagePath: String): BufferedImage {
         val img = File(GachaConfig.localPath + imagePath).absoluteFile
         if (img.exists()) {
             return ImageIO.read(img)
@@ -40,8 +41,17 @@ class PictureMake {
             ImageIO.read(URL(GachaConfig.galleryPath + imagePath.urlCode))
         } catch (e: Exception) {
             println("图片获取失败：$imagePath")
-            ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/default1.png".urlCode))
-        }
+            if (imagePath.contains("武器图片")) {
+                println("开始尝试合成武器图片")
+                try {
+                    MakeWeapon().makeImg(imagePath.substringAfterLast("/").substringBefore("."))
+                } catch (e: Exception) {
+                    ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/default1.png".urlCode))
+                }
+            } else {
+                ImageIO.read(URL(GachaConfig.galleryPath + "其他图片/default1.png".urlCode))
+            }
+        } as BufferedImage
         val parent = img.parentFile
         if (!parent.exists()) {
             parent.mkdirs()
@@ -182,10 +192,11 @@ class PictureMake {
             val images = gachaTool.dataArray.filter { it.key != "已抽次数" }.map {
                 async { judgeImg("${gachaType}图片/${it.key.split("-")[1]}.png") }
             }
-
+            val itemList = gachaTool.dataArray.filter { it.key != "已抽次数" }
             images.forEachIndexed { index, deferredImage ->
                 // 获取图像
                 val roleImage = deferredImage.await()
+
                 gd.drawImage(
                     roleImage,
                     roleX + roleImage.width * (lineX - 1),
@@ -208,7 +219,7 @@ class PictureMake {
                 gd.font = Font("汉仪青云简", Font.ITALIC, 100)
 
                 gd.drawString(
-                    gachaTool.dataArray[index + 1].value.toString(),
+                    itemList[index].value.toString(),
                     roleX + 147 + roleImage.width * (lineX - 1),
                     1502 + (roleImage.height + 50) * (n - 1)
                 )

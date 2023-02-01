@@ -130,12 +130,12 @@ class DailyMaterial {
         return if (file.exists()) {
             val lastModified = file.lastModified()
             val currentTime = System.currentTimeMillis()
-            val oneDay = 24 * 60 * 60 * 1000 * 3
+            val oneDay = 24 * 60 * 60 * 1000 * 15
             if (currentTime - lastModified > oneDay) {
-                println("文件已经超过3天，重新写入")
+                println("文件已经超过15天，重新写入")
                 true
             } else {
-                println("文件未超过3天，不重新写入")
+                println("文件未超过15天，不重新写入")
                 false
             }
         } else {
