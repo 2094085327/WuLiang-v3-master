@@ -22,4 +22,9 @@ interface GenshininfoService : IService<GenshinInfo?> {
      * 根据QQ号查询数据
      */
     fun selectByQqId(qqId: String):String
+
+    /**
+     * 根据QQ号获取uid
+     */
+    fun getUidByQqId(qqId: String):String
 }

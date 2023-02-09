@@ -65,4 +65,14 @@ class GenshininfoServiceImpl : ServiceImpl<GenshinInfoMapper?, GenshinInfo?>(), 
         }
         return "error"
     }
+
+    override fun getUidByQqId(qqId: String): String {
+        val queryWrapper = QueryWrapper<GenshinInfo>().eq("qqId", qqId).orderByDesc("updatetime")
+        val genshininfo = genshininfoMapper.selectList(queryWrapper)
+        return if (genshininfo.size == 0) {
+            "无记录"
+        } else {
+            genshininfo[0]?.uid.toString()
+        }
+    }
 }

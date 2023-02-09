@@ -19,8 +19,7 @@ data class GenshinInfo(
     /**
      * 用户UID
      */
-    @TableField(value = "uid")
-    private val uid: String? = null,
+    @TableField(value = "uid") val uid: String? = null,
 
     /**
      * 用户QQID

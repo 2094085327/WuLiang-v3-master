@@ -122,7 +122,6 @@ class GachaMain {
             else -> {
                 val gachaData = GachaData()
                 val gachaType = gachaData.getGaChaType("up池1")
-//                gachaData.getPermanentData()
                 val newUrl = gachaData.getUrl(url = message, gachaType = gachaType, times = 1, endId = "0")
                 val replyMsg = gachaData.checkUrl(newUrl)
                 if (replyMsg.contains("验证通过")) {
@@ -142,6 +141,17 @@ class GachaMain {
             getDataInLoop(uid.replace(" ", ""))
         } else {
             reply("这个UID还未分析过，没有抽卡记录哦")
+        }
+    }
+
+    @RobotListen(desc = "根据QQ号查询历史记录")
+    @Filter(">历史记录", matchType = MatchType.REGEX_MATCHES)
+    suspend fun GroupMessageEvent.getHistory() {
+        val uid = genshininfoService.getUidByQqId(author().id.toString())
+        if (uid != "无记录") {
+            getDataInLoop(uid)
+        } else {
+            reply("你的QQ还没有进行过抽卡分析，不存在抽卡记录哦")
         }
     }
 

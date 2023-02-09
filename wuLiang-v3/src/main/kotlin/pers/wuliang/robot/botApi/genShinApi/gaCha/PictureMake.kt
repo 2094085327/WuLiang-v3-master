@@ -175,7 +175,7 @@ class PictureMake {
         val countWhite = judgeImg("其他图片/计数块.png")
         val gachaTool = GachaTool.instance
 
-        val lines = ceil((gachaTool.dataArray.size / 7.0))
+        val lines = ceil((gachaTool.dataArray.size-1 / 7.0))
         val newWhite = resizeImage(white, white.width, (white.height + 506 * lines + 60 * lines).toInt())
         // 创建绘画对象
         val gd: Graphics2D = newWhite.createGraphics()
