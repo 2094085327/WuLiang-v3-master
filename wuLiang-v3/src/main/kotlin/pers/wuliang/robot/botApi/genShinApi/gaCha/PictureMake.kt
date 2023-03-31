@@ -25,16 +25,10 @@ import kotlin.math.ceil
 
 class PictureMake {
 
-    private val imageCache = mutableMapOf<String, BufferedImage>()
-
     fun judgeImg(imagePath: String): BufferedImage {
         val img = File(GachaConfig.localPath + imagePath).absoluteFile
         if (img.exists()) {
             return ImageIO.read(img)
-        }
-
-        if (imageCache.containsKey(imagePath)) {
-            return imageCache[imagePath]!!
         }
 
         val bi: BufferedImage = try {
@@ -57,7 +51,6 @@ class PictureMake {
             parent.mkdirs()
         }
         ImageIO.write(bi, "png", img)
-        imageCache[imagePath] = bi
 
         return bi
     }
@@ -175,7 +168,7 @@ class PictureMake {
         val countWhite = judgeImg("其他图片/计数块.png")
         val gachaTool = GachaTool.instance
 
-        val lines = ceil((gachaTool.dataArray.size-1 / 7.0))
+        val lines = ceil((gachaTool.dataArray.size - 1) / 7.0)
         val newWhite = resizeImage(white, white.width, (white.height + 506 * lines + 60 * lines).toInt())
         // 创建绘画对象
         val gd: Graphics2D = newWhite.createGraphics()
@@ -265,6 +258,7 @@ class PictureMake {
         gd.font = Font("微软雅黑", Font.PLAIN, 101)
         textPosition(gd, used.toString(), 1400f, 412f)
         gd.dispose()
+        System.gc()
         return newWhite
     }
 

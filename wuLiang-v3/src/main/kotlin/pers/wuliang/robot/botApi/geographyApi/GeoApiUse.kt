@@ -85,6 +85,7 @@ class GeoApiUse {
         withContext(Dispatchers.IO) {
             Files.delete(Paths.get(File(GeoConfig.Path.city).absolutePath))
         }
+        System.gc()
     }
 
     @RobotListen(desc = "查询城市天气情况")
@@ -101,6 +102,7 @@ class GeoApiUse {
             Files.delete(Paths.get(File(GeoConfig.Path.weather).absolutePath))
         }
         clearData()
+        System.gc()
     }
 
     @RobotListen(desc = "城市三天预报")
@@ -134,5 +136,6 @@ class GeoApiUse {
             send(msg)
         }
         clearData()
+        System.gc()
     }
 }

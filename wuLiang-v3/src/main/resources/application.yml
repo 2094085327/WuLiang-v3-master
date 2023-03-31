@@ -2,70 +2,8 @@ logging:
   level:
     love.forte: Info
 
-weather:
-  key: ""
+spring:
+  profiles.active: dev
 
 server:
-  port: 9898
-
-wuLiang:
-  config:
-    # 图床路径，用于自动更新图片
-    gallery: "https://cdn.jsdelivr.net/gh/2094085327/GenShinImage/"
-    # 原神本地图片路径
-    localPath: "resources/Image/Genshin/"
-
-##配置数据源
-spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/wuliang?useSSL=FALSE&serverTimezone=GMT%2B8
-    username: root
-    password: root
-    type: com.alibaba.druid.pool.DruidDataSource # 自定义数据源
-    initialSize: 5
-    minIdle: 5
-    maxActive: 20
-    maxWait: 60000
-    testWhileIdle: true
-    testOnBorrow: true
-    timeBetweenEvictionRunsMillis: 60000
-    minEvictableIdleTimeMillis: 300000
-    validationQuery: SELECT 1
-    filter:
-      wall:
-        config:
-          show-allow: true
-    #3.基础监控配置
-    web-stat-filter:
-      enabled: true
-      url-pattern: /*
-      #设置不统计哪些URL
-      exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
-      session-stat-enable: true
-      session-stat-max-count: 100
-    stat-view-servlet:
-      enabled: true
-      url-pattern: /druid/*
-      reset-enable: true
-      #设置监控页面的登录名和密码
-      login-username: admin
-      login-password: admin
-      allow: 127.0.0.1
-
-mybatis:
-  mapper-locations: classpath*:mapper/*Mapper.xml
-  configuration:
-    # 显示sql
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    banner: false
-    db-config:
-      id-type: auto
-      field-strategy: not_empty
-      table-fill-list:
-        - field:createdAt
-          strategy:always
-        - field:updatedAt
-          strategy:always
-
+  port: 9600

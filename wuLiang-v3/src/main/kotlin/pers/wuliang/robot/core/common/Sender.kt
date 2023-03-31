@@ -10,8 +10,7 @@ import love.forte.di.annotation.Beans
 import love.forte.simboot.annotation.Listener
 import love.forte.simbot.ID
 import love.forte.simbot.action.SendSupport
-import love.forte.simbot.action.sendIfSupport
-import love.forte.simbot.component.mirai.SimbotMiraiMessageReceipt
+//import love.forte.simbot.action.sendIfSupport
 import love.forte.simbot.component.mirai.event.MiraiMessagePostSendEvent
 import love.forte.simbot.definition.Contact
 import love.forte.simbot.definition.Friend
@@ -52,101 +51,101 @@ class Sender {
 
 
     companion object {
-        /**
-         * 发送并等待发送者的下一条消息的具体实现
-         * @param event 原消息对象
-         * @param messages 要发送的消息
-         * @param separator [messages]是数组或列表时的消息分隔符
-         * @param timeout 超时时间,单位[timeUnit]
-         * @param timeUnit 超时时间单位
-         * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
-         */
-        suspend fun sendAndWait(
-            event: MessageEvent,
-            messages: Any,
-            separator: String = "",
-            timeout: Long = 0,
-            timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
-            eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
-        ): MessageContent? {
-            val messageReceipt = when (event) {
-                is SendSupport -> event.send(buildMessage(messages, separator))
-                else -> event.source().sendIfSupport(buildMessage(messages, separator))
-            }
-            return wait(messageReceipt, event.getId(), timeout, timeUnit, eventMatcher)
-        }
+//        /**
+//         * 发送并等待发送者的下一条消息的具体实现
+//         * @param event 原消息对象
+//         * @param messages 要发送的消息
+//         * @param separator [messages]是数组或列表时的消息分隔符
+//         * @param timeout 超时时间,单位[timeUnit]
+//         * @param timeUnit 超时时间单位
+//         * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
+//         */
+//        suspend fun sendAndWait(
+//            event: MessageEvent,
+//            messages: Any,
+//            separator: String = "",
+//            timeout: Long = 0,
+//            timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
+//            eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
+//        ): MessageContent? {
+//            val messageReceipt = when (event) {
+//                is SendSupport -> event.send(buildMessage(messages, separator))
+//                else -> event.source().sendIfSupport(buildMessage(messages, separator))
+//            }
+//            return wait(messageReceipt, event.getId(), timeout, timeUnit, eventMatcher)
+//        }
+//
+//        /**
+//         * 发送群聊消息并等待发送者的下一条消息
+//         * @param group 发送的群
+//         * @param qq 接收消息的用户QQ号
+//         * @param messages 要发送的消息
+//         * @param separator [messages]是数组或列表时的消息分隔符
+//         * @param timeout 超时时间,单位[timeUnit]
+//         * @param timeUnit 超时时间单位
+//         * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
+//         */
+//        suspend fun sendGroupAndWait(
+//            group: String,
+//            qq: String,
+//            messages: Any,
+//            separator: String = "",
+//            timeout: Long = 0,
+//            timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
+//            eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
+//        ): MessageContent? = wait(
+//            sendGroupMsg(group, messages, separator), "message-${group}-${qq}", timeout, timeUnit, eventMatcher
+//        )
+//
+//        /**
+//         * 发送私聊消息并等待发送者的下一条消息
+//         * @param qq 接收消息的用户QQ号
+//         * @param messages 要发送的消息
+//         * @param separator [messages]是数组或列表时的消息分隔符
+//         * @param timeout 超时时间,单位[timeUnit]
+//         * @param timeUnit 超时时间单位
+//         * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
+//         */
+//        suspend fun sendPrivateAndWait(
+//            qq: String,
+//            messages: Any,
+//            separator: String = "",
+//            timeout: Long = 0,
+//            timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
+//            eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
+//        ): MessageContent? = wait(
+//            sendPrivateMsg(qq, messages, separator), "message-$qq", timeout, timeUnit, eventMatcher
+//        )
 
-        /**
-         * 发送群聊消息并等待发送者的下一条消息
-         * @param group 发送的群
-         * @param qq 接收消息的用户QQ号
-         * @param messages 要发送的消息
-         * @param separator [messages]是数组或列表时的消息分隔符
-         * @param timeout 超时时间,单位[timeUnit]
-         * @param timeUnit 超时时间单位
-         * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
-         */
-        suspend fun sendGroupAndWait(
-            group: String,
-            qq: String,
-            messages: Any,
-            separator: String = "",
-            timeout: Long = 0,
-            timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
-            eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
-        ): MessageContent? = wait(
-            sendGroupMsg(group, messages, separator), "message-${group}-${qq}", timeout, timeUnit, eventMatcher
-        )
-
-        /**
-         * 发送私聊消息并等待发送者的下一条消息
-         * @param qq 接收消息的用户QQ号
-         * @param messages 要发送的消息
-         * @param separator [messages]是数组或列表时的消息分隔符
-         * @param timeout 超时时间,单位[timeUnit]
-         * @param timeUnit 超时时间单位
-         * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
-         */
-        suspend fun sendPrivateAndWait(
-            qq: String,
-            messages: Any,
-            separator: String = "",
-            timeout: Long = 0,
-            timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
-            eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
-        ): MessageContent? = wait(
-            sendPrivateMsg(qq, messages, separator), "message-$qq", timeout, timeUnit, eventMatcher
-        )
-
-        /**
-         * 等待下一条消息具体实现
-         * @param messageReceipt 发送消息的消息回执
-         * @param id 校验id
-         * @param timeout 超时时间,单位[timeUnit]
-         * @param timeUnit 超时时间单位
-         * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
-         */
-        private suspend fun wait(
-            messageReceipt: MessageReceipt?,
-            id: String,
-            timeout: Long = 0,
-            timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
-            eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
-        ): MessageContent? {
-            val time = timeUnit.toMillis(timeout)
-            if (time > 0 && messageReceipt?.isSuccess == true && messageReceipt is SimbotMiraiMessageReceipt<*>) {
-                val channel = Channel<MessageContent>()
-                waitMap[messageReceipt.receipt.hashCode()] = mutableMapOf(
-                    "time" to time, "eventMatcher" to eventMatcher, "id" to id, "channel" to channel
-                )
-                return withTimeoutOrNull(time) {
-                    channel.receive()
-                }.also {
-                    waitMap.remove(messageReceipt.receipt.hashCode())
-                }
-            }
-            return null
-        }
+//        /**
+//         * 等待下一条消息具体实现
+//         * @param messageReceipt 发送消息的消息回执
+//         * @param id 校验id
+//         * @param timeout 超时时间,单位[timeUnit]
+//         * @param timeUnit 超时时间单位
+//         * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
+//         */
+//        private suspend fun wait(
+//            messageReceipt: MessageReceipt?,
+//            id: String,
+//            timeout: Long = 0,
+//            timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
+//            eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
+//        ): MessageContent? {
+//            val time = timeUnit.toMillis(timeout)
+//            if (time > 0 && messageReceipt?.isSuccess == true && messageReceipt is SimbotMiraiMessageReceipt<*>) {
+//                val channel = Channel<MessageContent>()
+//                waitMap[messageReceipt.receipt.hashCode()] = mutableMapOf(
+//                    "time" to time, "eventMatcher" to eventMatcher, "id" to id, "channel" to channel
+//                )
+//                return withTimeoutOrNull(time) {
+//                    channel.receive()
+//                }.also {
+//                    waitMap.remove(messageReceipt.receipt.hashCode())
+//                }
+//            }
+//            return null
+//        }
 
         /**
          * 发送消息
@@ -162,7 +161,7 @@ class Sender {
             if (messages.toString().isEmpty()) return null
             return when (event) {
                 is SendSupport -> event.send(buildMessage(messages, separator))
-                is MessageEvent -> event.source().sendIfSupport(buildMessage(messages, separator))
+//                is MessageEvent -> event.source().sendIfSupport(buildMessage(messages, separator))
                 else -> null
             }
         }
@@ -297,73 +296,73 @@ class Sender {
  */
 val waitMap: MutableMap<Int, MutableMap<String, Any>> = HashMap()
 
-/**
- * 发送并等待发送者的下一条消息
- * @see Sender.sendAndWait
- * @param messages 要发送的消息
- * @param timeout 超时时间,单位[timeUnit]
- * @param timeUnit 超时时间单位
- * @param regex 消息的正则表达式
- */
-suspend fun MessageEvent.sendAndWait(
-    messages: Any,
-    timeout: Long = 0,
-    timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
-    regex: Regex,
-): MessageContent? = sendAndWait(messages, "", timeout, timeUnit) {
-    regex.matches(it.messageContent.plainText)
-}
+///**
+// * 发送并等待发送者的下一条消息
+// * @see Sender.sendAndWait
+// * @param messages 要发送的消息
+// * @param timeout 超时时间,单位[timeUnit]
+// * @param timeUnit 超时时间单位
+// * @param regex 消息的正则表达式
+// */
+//suspend fun MessageEvent.sendAndWait(
+//    messages: Any,
+//    timeout: Long = 0,
+//    timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
+//    regex: Regex,
+//): MessageContent? = sendAndWait(messages, "", timeout, timeUnit) {
+//    regex.matches(it.messageContent.plainText)
+//}
+//
+///**
+// * 发送并等待发送者的下一条消息
+// * @see Sender.sendAndWait
+// * @param messages 要发送的消息
+// * @param separator [messages]是数组或列表时的消息分隔符
+// * @param timeout 超时时间,单位[timeUnit]
+// * @param timeUnit 超时时间单位
+// * @param regex 消息的正则表达式
+// */
+//suspend fun MessageEvent.sendAndWait(
+//    messages: Any,
+//    separator: String = "",
+//    timeout: Long = 0,
+//    timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
+//    regex: Regex,
+//): MessageContent? = sendAndWait(messages, separator, timeout, timeUnit) {
+//    regex.matches(it.messageContent.plainText)
+//}
+//
+///**
+// * 发送并等待发送者的下一条消息
+// * @see Sender.sendAndWait
+// * @param messages 要发送的消息
+// * @param timeout 超时时间,单位[timeUnit]
+// * @param timeUnit 超时时间单位
+// * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
+// */
+//suspend fun MessageEvent.sendAndWait(
+//    messages: Any,
+//    timeout: Long = 0,
+//    timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
+//    eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
+//): MessageContent? = sendAndWait(messages, "", timeout, timeUnit, eventMatcher)
 
-/**
- * 发送并等待发送者的下一条消息
- * @see Sender.sendAndWait
- * @param messages 要发送的消息
- * @param separator [messages]是数组或列表时的消息分隔符
- * @param timeout 超时时间,单位[timeUnit]
- * @param timeUnit 超时时间单位
- * @param regex 消息的正则表达式
- */
-suspend fun MessageEvent.sendAndWait(
-    messages: Any,
-    separator: String = "",
-    timeout: Long = 0,
-    timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
-    regex: Regex,
-): MessageContent? = sendAndWait(messages, separator, timeout, timeUnit) {
-    regex.matches(it.messageContent.plainText)
-}
-
-/**
- * 发送并等待发送者的下一条消息
- * @see Sender.sendAndWait
- * @param messages 要发送的消息
- * @param timeout 超时时间,单位[timeUnit]
- * @param timeUnit 超时时间单位
- * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
- */
-suspend fun MessageEvent.sendAndWait(
-    messages: Any,
-    timeout: Long = 0,
-    timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
-    eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
-): MessageContent? = sendAndWait(messages, "", timeout, timeUnit, eventMatcher)
-
-/**
- * 发送并等待发送者的下一条消息
- * @see Sender.sendAndWait
- * @param messages 要发送的消息
- * @param separator [messages]是数组或列表时的消息分隔符
- * @param timeout 超时时间,单位[timeUnit]
- * @param timeUnit 超时时间单位
- * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
- */
-suspend fun MessageEvent.sendAndWait(
-    messages: Any,
-    separator: String = "",
-    timeout: Long = 0,
-    timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
-    eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
-): MessageContent? = Sender.sendAndWait(this, messages, separator, timeout, timeUnit, eventMatcher)
+///**
+// * 发送并等待发送者的下一条消息
+// * @see Sender.sendAndWait
+// * @param messages 要发送的消息
+// * @param separator [messages]是数组或列表时的消息分隔符
+// * @param timeout 超时时间,单位[timeUnit]
+// * @param timeUnit 超时时间单位
+// * @param eventMatcher 收到消息时的匹配方法,只返回匹配通过时的消息
+// */
+//suspend fun MessageEvent.sendAndWait(
+//    messages: Any,
+//    separator: String = "",
+//    timeout: Long = 0,
+//    timeUnit: TimeUnit = TimeUnit.MILLISECONDS,
+//    eventMatcher: ContinuousSessionEventMatcher<MessageEvent> = ContinuousSessionEventMatcher,
+//): MessageContent? = Sender.sendAndWait(this, messages, separator, timeout, timeUnit, eventMatcher)
 
 /**
  * 发送消息

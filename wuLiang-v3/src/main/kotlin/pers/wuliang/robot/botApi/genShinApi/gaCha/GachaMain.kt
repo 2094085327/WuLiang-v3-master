@@ -107,6 +107,7 @@ class GachaMain {
         } else {
             send(replyMsg)
         }
+        System.gc()
     }
 
     @RobotListen(desc = "上次分析")
@@ -132,6 +133,7 @@ class GachaMain {
                 }
             }
         }
+        System.gc()
     }
 
     @RobotListen(desc = "根据uid查询")
@@ -142,17 +144,19 @@ class GachaMain {
         } else {
             reply("这个UID还未分析过，没有抽卡记录哦")
         }
+        System.gc()
     }
 
     @RobotListen(desc = "根据QQ号查询历史记录")
     @Filter(">历史记录", matchType = MatchType.REGEX_MATCHES)
-    suspend fun GroupMessageEvent.getHistory() {
+    suspend fun GroupMessageEvent.getHistroy() {
         val uid = genshininfoService.getUidByQqId(author().id.toString())
         if (uid != "无记录") {
             getDataInLoop(uid)
         } else {
             reply("你的QQ还没有进行过抽卡分析，不存在抽卡记录哦")
         }
+        System.gc()
     }
 
     @RobotListen(desc = "图片测试")
@@ -169,7 +173,6 @@ class GachaMain {
             MakeWeapon().makeImg(name)
             send("合成完成")
         }
+        System.gc()
     }
-
-
 }
