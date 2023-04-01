@@ -13,7 +13,7 @@ import java.util.*
 class LifeRestart {
     private var objectMapper = ObjectMapper()
 
-    private val rootPath = "wuLiang-v3/src/main/kotlin/pers/wuliang/robot/botApi/gameApi/lifeRestart/zh-cn"
+    private val rootPath = "resources/Json/lifeRestart/zh-cn"
 
     data class UserData(
         val AGE: Int = 0, // 年龄 age AGE
@@ -104,7 +104,7 @@ class LifeRestart {
                 name = talentData["name"].toString(),
                 description = talentData["description"].toString(),
                 status = talentData["status"]?.toString()?.toInt()?.plus(effect.RDM) ?: 0,
-                effect = effect,
+                effect = if (condition != null) Effect() else effect,
                 excludes = excludes,
                 condition = condition?.let { Pair(id, it) }
             )
@@ -200,7 +200,7 @@ class LifeRestart {
                             userData.AGE in it.first..it.second
                         }
                         ?: false
-                    println("valid:$valid")
+//                    println("valid:$valid")
                     return valid
                 } else if (c.startsWith("TLT?")) {
                     val regex = Regex("^TLT?\\[([,\\d]+)]$")
@@ -208,7 +208,7 @@ class LifeRestart {
                     if (matchResult != null) {
                         val valuesStr = matchResult.groupValues[1]
                         val values = valuesStr.split(",").map { it }
-                        println(values)
+//                        println(values)
                         for (value in values) {
                             if (userData.TLT!!.id.contains(value)) {
                                 return true
@@ -223,13 +223,16 @@ class LifeRestart {
     }
 
     private fun judgingCondition(random: Random, userData: UserData): UserData {
-        var effect = Effect(0, 0, 0, 0, 0, 0, 0)
         for (c in myTalent.condition) {
+//            println(c.second)
+//            println(isConditionSatisfied(c.second, userData))
             if (isConditionSatisfied(c.second, userData)) {
+//                effect: Effect
 //                val jsonNode = File(talentPath).absoluteFile.readText()
                 val jsonData = objectMapper.readTree(jsonStr)
                 val effectData = jsonData[c.first]["effect"]
-                effect = Effect(
+//                println(effectData)
+                val effect = Effect(
                     CHR = effectData?.get("CHR")?.toString()?.toInt() ?: 0,
                     INT = effectData?.get("INT")?.toString()?.toInt() ?: 0,
                     STR = effectData?.get("STR")?.toString()?.toInt() ?: 0,
@@ -239,27 +242,29 @@ class LifeRestart {
                     RDM = effectData?.get("RDM")?.toString()?.toInt() ?: 0,
                 )
                 // TODO 条件成立时删除此条天赋
+                return UserData(
+                    CHR = userData.CHR + effect.CHR + rdmValue(random, effect, false),
+                    INT = userData.INT + effect.INT + rdmValue(random, effect, false),
+                    STR = userData.STR + effect.STR + rdmValue(random, effect, false),
+                    MNY = userData.MNY + effect.MNY + rdmValue(random, effect, false),
+                    SPR = userData.SPR + effect.SPR + rdmValue(random, effect, true),
+                    LIF = userData.LIF + effect.LIF,
+                    EVT = userData.EVT,
+                    TMS = userData.TMS,
+                    STATES = userData.STATES,
+                    TLT = myTalent
+                )
             }
         }
-        return UserData(
-            CHR = userData.CHR + effect.CHR + rdmValue(random, effect, false),
-            INT = userData.INT + effect.INT + rdmValue(random, effect, false),
-            STR = userData.STR + effect.STR + rdmValue(random, effect, false),
-            MNY = userData.MNY + effect.MNY + rdmValue(random, effect, false),
-            SPR = userData.SPR + effect.SPR + rdmValue(random, effect, true),
-            LIF = userData.LIF + effect.LIF,
-            EVT = userData.EVT,
-            TMS = userData.TMS,
-            STATES = userData.STATES,
-            TLT = userData.TLT,
-        )
+        return userData
     }
 
     fun startGame(): UserData {
-        val random = Random(System.currentTimeMillis())
-
         getTalent()
+        val random = Random(System.currentTimeMillis())
         val users = UserData()
+        users.STATES += myTalent.status
+//        println(users.STATES)
         var userData = UserData(
             CHR = assignValue(random, users, false) + myTalent.effect.CHR,
             INT = assignValue(random, users, false) + myTalent.effect.INT,
@@ -271,10 +276,11 @@ class LifeRestart {
         )
 //        userData.TLT.addAll(myTalent.id)
 
-        println(userData)
-        println(userData.STATES)
+//        println(userData)
+//        println(userData.STATES)
 
         if (myTalent.condition.size != 0) {
+//            println(myTalent.condition)
             userData = judgingCondition(random, userData)
         }
 
@@ -283,8 +289,4 @@ class LifeRestart {
         return userData
 
     }
-}
-
-fun main() {
-    LifeRestart().startGame()
 }

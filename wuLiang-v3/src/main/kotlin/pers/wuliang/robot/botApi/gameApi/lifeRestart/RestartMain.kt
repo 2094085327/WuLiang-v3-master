@@ -44,7 +44,10 @@ class RestartMain {
 
         var talentStr = "你获得了三个初始天赋:\n"
         for (i in 0 until 3) {
-            talentStr = talentStr.plus("${allData.data.TLT!!.name[i]} ${allData.data.TLT!!.description[i]}\n")
+            talentStr = talentStr.plus("${allData.data.TLT!!.name[i]} ${allData.data.TLT!!.description[i]}")
+            if (i != 2) {
+                talentStr = talentStr.plus("\n")
+            }
         }
         reply(talentStr)
         var attributeStr = "你获得了以下初始属性:\n"
@@ -56,7 +59,10 @@ class RestartMain {
             "快乐" to allData.data.SPR
         )
         for ((name, value) in attributes) {
-            attributeStr = attributeStr.plus("$name: $value\n")
+            attributeStr = attributeStr.plus("$name: $value")
+            if (name != "快乐") {
+                attributeStr = attributeStr.plus("\n")
+            }
         }
         reply(attributeStr)
     }
