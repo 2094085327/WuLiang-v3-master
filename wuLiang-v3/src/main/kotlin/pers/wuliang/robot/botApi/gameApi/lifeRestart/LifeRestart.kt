@@ -12,20 +12,26 @@ import java.util.*
  */
 class LifeRestart {
     private var objectMapper = ObjectMapper()
-
     private val rootPath = "resources/Json/lifeRestart/zh-cn"
+    private val myTalent = MyTalent(effect = Effect(0, 0, 0, 0, 0, 0))
+    private val talentJson = File("$rootPath/talents.json").absoluteFile.readText()
+    private val ageJson = objectMapper.readTree(File("$rootPath/age.json").absoluteFile)
+    val eventsJson = objectMapper.readTree(File("$rootPath/events.json"))!!
+
+    //    System.currentTimeMillis()
+    private val random = Random()
 
     data class UserData(
-        val AGE: Int = 0, // 年龄 age AGE
-        val CHR: Int = 0, // 颜值 charm CHR
-        val INT: Int = 0, // 智力 intelligence INT
-        val STR: Int = 0, // 体质 strength STR
-        val MNY: Int = 0, // 家境 money MNY
-        val SPR: Int = 0, // 快乐 spirit SPR
-        val LIF: Int = 1, // 生命 life LIFE
-        val EVT: Int = 0, // 事件 event EVT
+        var AGE: Int = 0, // 年龄 age AGE
+        var CHR: Int = 0, // 颜值 charm CHR
+        var INT: Int = 0, // 智力 intelligence INT
+        var STR: Int = 0, // 体质 strength STR
+        var MNY: Int = 0, // 家境 money MNY
+        var SPR: Int = 0, // 快乐 spirit SPR
+        var LIF: Int = 1, // 生命 life LIFE
         val TMS: Int = 0, // 次数 times TMS
         var STATES: Int = 20, // 初始可用属性点
+        val EVT: ArrayList<String> = arrayListOf(), // 事件 event EVT
         var TLT: MyTalent? = null // 天赋 talent TLT
     )
 
@@ -73,15 +79,11 @@ class LifeRestart {
     )
 
 
-    private val myTalent = MyTalent(effect = Effect(0, 0, 0, 0, 0, 0))
-    private val talentPath = "$rootPath/talents.json"
-    private val jsonStr = File(talentPath).absoluteFile.readText()
-
     /**
      * 获取初始化天赋
      */
     private fun getTalent() {
-        val map: Map<*, *>? = objectMapper.readValue(jsonStr, Map::class.java)
+        val map: Map<*, *>? = objectMapper.readValue(talentJson, Map::class.java)
         val talents = map?.entries?.mapNotNull { entry ->
             val talentData = entry.value as? Map<*, *> ?: return@mapNotNull null
             val excludeList = talentData["exclude"] as? List<*>
@@ -159,77 +161,130 @@ class LifeRestart {
      */
     private fun isConditionSatisfied(condition: String, userData: UserData): Boolean {
         // 分割多个条件
-        val conditions = condition.replace("[()]".toRegex(), "").split("&")
-        for (c in conditions) {
-            // 找到操作符
-            val opIndex = c.indexOfAny(listOf("<", ">"))
-            if (opIndex != -1) {
-                // 获取属性
-                val prop = c.substring(0, opIndex)
-                // 获取操作符
-                val op = c[opIndex].toString()
-                // 获取比较值
-                val valueStr = c.substring(opIndex + 1)
-                // 获取比较值
-                val value = valueStr.toIntOrNull()
+        val firstCondition = condition.split("|")
+//        println("firstCondition$firstCondition")
+        var anyTrue = false
+        var allFalse = true // 是否所有条件都为 false
+        for (f in firstCondition) {
+            val conditions = f.trim('"').replace("[()]".toRegex(), "").split("&")
 
-                value?.let { v ->
-                    val propValue = userData::class.java.getDeclaredField(prop).also {
-                        it.isAccessible = true
-                    }.get(userData).toString().toInt()
+            for (c in conditions) {
+//                println("c$c")
+                // 找到操作符
+                val opIndex = c.indexOfAny(listOf("<", ">"))
+                if (opIndex != -1) {
+                    // 获取属性
+                    val prop = c.substring(0, opIndex)
+                    // 获取操作符
+                    val op = c[opIndex].toString()
+                    // 获取比较值
+                    val valueStr = c.substring(opIndex + 1)
+                    // 获取比较值
+                    val value = valueStr.toInt()
+                    val propValue =
+                        userData.javaClass.getDeclaredField(prop).apply { isAccessible = true }.get(userData).toString()
+                            .toInt()
+//                    println(propValue)
+//                    val propValue = userData::class.java.getDeclaredField(prop).also {
+//                        it.isAccessible = true
+//                    }.get(userData).toString().toInt()
+//                    val propValue =getattr
+
                     when (op) {
-                        "<" -> if (propValue >= v) return false
-                        ">" -> if (propValue <= v) return false
-                        else -> return false
+                        "<" -> if (propValue < value) {
+                            allFalse = false
+                            anyTrue = true
+                        } else allFalse = true
+                        ">" -> if (propValue > value) {
+                            allFalse = false
+                            anyTrue = true
+                        } else allFalse = true
+//                        else -> allFalse = true
                     }
-                }
+//                    value?.let { v ->
+//                        val propValue = userData::class.java.getDeclaredField(prop).also {
+//                            it.isAccessible = true
+//                        }.get(userData).toString().toInt()
+//                        when (op) {
+//                            "<" -> if (propValue >= v) allFalse = true
+//                            ">" -> if (propValue <= v) allFalse = true
+//                            else -> allFalse = true
+//                        }
+//                    }
 
-            } else {
-                if (c.startsWith("AGE?")) {
-                    // 匹配 AGE?[70] 单数字的正则表达式
-                    val regex1 = Regex("AGE\\?\\[(\\d+)]")
-                    // 匹配 AGE?[70,80] 范围的正则表达式
-                    val regex2 = Regex("AGE\\?\\[(\\d+),(\\d+)]")
+                } else {
+                    if (c.startsWith("AGE?")) {
+                        // 匹配 AGE?[70] 单数字的正则表达式
+                        val regex1 = Regex("AGE\\?\\[(\\d+)]")
+                        // 匹配 AGE?[70,80] 范围的正则表达式
+                        val regex2 = Regex("AGE\\?\\[(\\d+),(\\d+)]")
 
-                    val valid = regex1.matchEntire(c)?.groupValues?.get(1)?.toInt()?.let {
-                        userData.AGE >= it
-                    }
-                        ?: regex2.matchEntire(c)?.groupValues?.let { values ->
-                            Pair(values[1].toInt(), values[2].toInt())
-                        }?.let {
-                            userData.AGE in it.first..it.second
+                        val valid = regex1.matchEntire(c)?.groupValues?.get(1)?.toInt()?.let {
+                            userData.AGE >= it
                         }
-                        ?: false
-//                    println("valid:$valid")
-                    return valid
-                } else if (c.startsWith("TLT?")) {
-                    val regex = Regex("^TLT?\\[([,\\d]+)]$")
-                    val matchResult = regex.find(c)
-                    if (matchResult != null) {
-                        val valuesStr = matchResult.groupValues[1]
-                        val values = valuesStr.split(",").map { it }
-//                        println(values)
-                        for (value in values) {
-                            if (userData.TLT!!.id.contains(value)) {
-                                return true
+                            ?: regex2.matchEntire(c)?.groupValues?.let { values ->
+                                Pair(values[1].toInt(), values[2].toInt())
+                            }?.let {
+                                userData.AGE in it.first..it.second
                             }
+                            ?: false
+                        if (valid) {
+                            allFalse = false
+                            anyTrue = true
+                        } else {
+                            allFalse = true
                         }
-                        return false
+                    } else if (c.startsWith("TLT?")) {
+                        val regex = Regex("\\[(.*?)]")
+                        val matchResult = regex.find(c)
+                        if (matchResult != null) {
+                            val valuesStr = matchResult.groupValues[1]
+                            val values = valuesStr.split(",").map { it }
+                            for (value in values) {
+                                if (userData.TLT!!.id.contains(value)) {
+                                    allFalse = false
+                                    anyTrue = true
+                                }
+                            }
+//                            allFalse = true
+                        }
+                    } else if (c.trim('"').startsWith("EVT?")) {
+                        val regex = Regex("\\[(.*?)]")
+                        val matchResult = regex.find(c)
+                        if (matchResult != null) {
+                            val valuesStr = matchResult.groupValues[1]
+                            val values = valuesStr.split(",").map { it }
+//                        println(values)
+                            for (value in values) {
+//                                println(value)
+//                                println(userData.EVT)
+                                if (userData.EVT.contains(value)) {
+                                    allFalse = false
+                                    anyTrue = true
+                                }
+                            }
+//                            allFalse = true
+                        }
                     }
                 }
             }
         }
-        return true // 所有条件都满足
+        return if (firstCondition.size > 1) {
+            anyTrue
+        } else {
+            !allFalse
+        }
+//        return true // 所有条件都满足
     }
 
     private fun judgingCondition(random: Random, userData: UserData): UserData {
         for (c in myTalent.condition) {
 //            println(c.second)
-//            println(isConditionSatisfied(c.second, userData))
+//            println("isConditionSatisfied(c.second, userData)${isConditionSatisfied(c.second, userData)}")
             if (isConditionSatisfied(c.second, userData)) {
 //                effect: Effect
 //                val jsonNode = File(talentPath).absoluteFile.readText()
-                val jsonData = objectMapper.readTree(jsonStr)
+                val jsonData = objectMapper.readTree(talentJson)
                 val effectData = jsonData[c.first]["effect"]
 //                println(effectData)
                 val effect = Effect(
@@ -261,16 +316,26 @@ class LifeRestart {
 
     fun startGame(): UserData {
         getTalent()
-        val random = Random(System.currentTimeMillis())
+
         val users = UserData()
         users.STATES += myTalent.status
 //        println(users.STATES)
         var userData = UserData(
-            CHR = assignValue(random, users, false) + myTalent.effect.CHR,
-            INT = assignValue(random, users, false) + myTalent.effect.INT,
-            STR = assignValue(random, users, false) + myTalent.effect.STR,
-            MNY = assignValue(random, users, false) + myTalent.effect.MNY,
-            SPR = assignValue(random, users, true) + myTalent.effect.SPR,
+            CHR = assignValue(random, users, false) +
+                    myTalent.effect.CHR +
+                    rdmValue(random, myTalent.effect, false),
+            INT = assignValue(random, users, false) +
+                    myTalent.effect.INT +
+                    rdmValue(random, myTalent.effect, false),
+            STR = assignValue(random, users, false) +
+                    myTalent.effect.STR +
+                    rdmValue(random, myTalent.effect, false),
+            MNY = assignValue(random, users, false) +
+                    myTalent.effect.MNY +
+                    rdmValue(random, myTalent.effect, false),
+            SPR = assignValue(random, users, true) +
+                    myTalent.effect.SPR +
+                    rdmValue(random, myTalent.effect, false),
             LIF = 1 + myTalent.effect.LIF,
             STATES = 20 + myTalent.effect.RDM
         )
@@ -288,5 +353,48 @@ class LifeRestart {
 
         return userData
 
+    }
+
+    fun nextGameStep(userData: UserData): UserData {
+        val ageEvent = ageJson[userData.AGE.toString()]["event"]
+        var randomAgeEvent = ageEvent[random.nextInt(0, ageEvent.size())].toString().split("*")[0].trim('"')
+        val eventAll = eventsJson[randomAgeEvent]
+        var eventExclude = eventAll["exclude"]
+        var eventInclude = eventAll["include"]
+        while (true) {
+            if (eventExclude != null && eventInclude == null) {
+                if (!isConditionSatisfied(eventExclude.toString(), userData)) {
+                    break
+                }
+            } else if (eventInclude != null && eventExclude == null) {
+                if (isConditionSatisfied(eventInclude.toString(), userData)) {
+                    break
+                }
+            } else if (eventExclude != null) {
+                if (!isConditionSatisfied(eventExclude.toString(), userData) &&
+                    isConditionSatisfied(eventInclude.toString(), userData)
+                ) {
+                    break
+                }
+            } else {
+                break
+            }
+            randomAgeEvent = ageEvent[random.nextInt(0, ageEvent.size())].toString().split("*")[0].trim('"')
+            eventExclude = eventsJson[randomAgeEvent]["exclude"]
+            eventInclude = eventsJson[randomAgeEvent]["include"]
+        }
+        val eventsEffect = eventsJson[randomAgeEvent]["effect"]
+        if (eventsEffect != null) {
+            userData.CHR += eventsEffect["CHR"]?.toString()?.toInt() ?: 0
+            userData.INT += eventsEffect["INT"]?.toString()?.toInt() ?: 0
+            userData.STR += eventsEffect["STR"]?.toString()?.toInt() ?: 0
+            userData.MNY += eventsEffect["MNY"]?.toString()?.toInt() ?: 0
+            userData.SPR += eventsEffect["SPR"]?.toString()?.toInt() ?: 0
+            userData.LIF += eventsEffect["LIF"]?.toString()?.toInt() ?: 0
+        }
+        userData.EVT.add(randomAgeEvent)
+        userData.AGE += 1
+        println(userData)
+        return userData
     }
 }
