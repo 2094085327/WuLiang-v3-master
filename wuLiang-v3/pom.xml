@@ -83,7 +83,6 @@
             <artifactId>jsch</artifactId>
             <version>0.1.55</version>
         </dependency>
-        <!--mybatis-plus 是自己开发的，非官方的！-->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>
@@ -204,6 +203,19 @@
                     </excludes>
                     <fork>true</fork>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jetbrains.dokka</groupId>
+                <artifactId>dokka-maven-plugin</artifactId>
+                <version>1.7.20</version>
+                <executions>
+                    <execution>
+                        <phase>pre-site</phase>
+                        <goals>
+                            <goal>dokka</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 <!--            <plugin>-->
 <!--                <groupId>org.jetbrains.kotlin</groupId>-->

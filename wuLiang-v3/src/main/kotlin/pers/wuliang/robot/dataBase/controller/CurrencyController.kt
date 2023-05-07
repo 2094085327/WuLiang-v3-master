@@ -171,45 +171,45 @@ class CurrencyController {
         val randoms = (-500..800).random()
         if (currencyExist == null) {
             replyBlocking("你还没有签到过，输入「签到」进行第一次签到吧")
+            return
+        }
+        if (isMonth(
+                Date(),
+                dateFormat.parse(currencyExist.signTime)
+            ) && calendar.get(Calendar.DAY_OF_MONTH) > currencyExist.times.toString().toInt()
+        ) {
+            if (currencyExist.money?.minus(300)!! > 0) {
+                val currency = Currency(
+                    qqName = author().nickOrUsername,
+                    level = level(
+                        currencyExist.level.toString().toInt(),
+                        currencyExist.exp.toString().toInt() + exp(currencyExist.exp, 3).toString().toInt()
+                    ),
+                    exp = exp(currencyExist.exp, 3)?.let { currencyExist.exp?.plus(it) },
+                    money = currencyExist.money.plus(500 + randoms),
+                    updateTime = LocalDateTime.now(),
+                    signTime = dateFormat.format(calendar.time),
+                    times = currencyExist.times?.plus(1)
+                )
+                currencyMapper.update(currency, queryWrapper)
+                replyBlocking(
+                    "[---------补签成功--------]\n" +
+                            "昵称: ${author().nickOrUsername}\n\n" +
+                            "${randomText(randoms)}" +
+                            "你今天签到获得了 ${500 + randoms} 无量币\n\n" +
+                            "等级: ${currency.level} LV\n\n" +
+                            "余额: ${currencyExist.money.plus(500 + randoms)} 无量币\n\n" +
+                            "本月已签到: ${currency.times} 天\n\n" +
+                            "签到日期: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}"
+                )
+            }
+
+
         } else {
-            if (isMonth(
-                    Date(),
-                    dateFormat.parse(currencyExist.signTime)
-                ) && calendar.get(Calendar.DAY_OF_MONTH) > currencyExist.times.toString().toInt()
-            ) {
-                if (currencyExist.money?.minus(300)!! > 0) {
-                    val currency = Currency(
-                        qqName = author().nickOrUsername,
-                        level = level(
-                            currencyExist.level.toString().toInt(),
-                            currencyExist.exp.toString().toInt() + exp(currencyExist.exp, 3).toString().toInt()
-                        ),
-                        exp = exp(currencyExist.exp, 3)?.let { currencyExist.exp?.plus(it) },
-                        money = currencyExist.money.plus(500 + randoms),
-                        updateTime = LocalDateTime.now(),
-                        signTime = dateFormat.format(calendar.time),
-                        times = currencyExist.times?.plus(1)
-                    )
-                    currencyMapper.update(currency, queryWrapper)
-                    replyBlocking(
-                        "[---------补签成功--------]\n" +
-                                "昵称: ${author().nickOrUsername}\n\n" +
-                                "${randomText(randoms)}" +
-                                "你今天签到获得了 ${500 + randoms} 无量币\n\n" +
-                                "等级: ${currency.level} LV\n\n" +
-                                "余额: ${currencyExist.money.plus(500 + randoms)} 无量币\n\n" +
-                                "本月已签到: ${currency.times} 天\n\n" +
-                                "签到日期: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}"
-                    )
-                }
-
-
+            if (currencyExist.times == 0) {
+                replyBlocking("这个月目前为止你还未签到过哦，无法补签~")
             } else {
-                if (currencyExist.times == 0) {
-                    replyBlocking("这个月目前为止你还未签到过哦，无法补签~")
-                } else {
-                    replyBlocking("这个月目前为止你已经全部签到过了哦，无法补签~")
-                }
+                replyBlocking("这个月目前为止你已经全部签到过了哦，无法补签~")
             }
         }
     }

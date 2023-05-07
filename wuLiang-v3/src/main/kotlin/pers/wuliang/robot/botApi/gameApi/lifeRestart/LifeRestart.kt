@@ -1,5 +1,6 @@
 package pers.wuliang.robot.botApi.gameApi.lifeRestart
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
 import java.util.*
@@ -18,7 +19,6 @@ class LifeRestart {
     private val ageJson = objectMapper.readTree(File("$rootPath/age.json").absoluteFile)
     val eventsJson = objectMapper.readTree(File("$rootPath/events.json"))!!
 
-    //    System.currentTimeMillis()
     private val random = Random()
 
     data class UserData(
@@ -137,156 +137,151 @@ class LifeRestart {
     }
 
     /**
-     * 随机分配属性
-     */
-    private fun assignValue(random: Random, users: UserData, lastTalent: Boolean): Int {
-        val remainingPoints = users.STATES
-        val value = if (lastTalent) remainingPoints else random.nextInt(0, remainingPoints + 1)
-        users.STATES -= value
-        return value
-    }
-
-    /**
-     * 分配额外的随机属性
-     */
-    private fun rdmValue(random: Random, effect: Effect, lastRDM: Boolean): Int {
-        val remainingPoints = effect.RDM
-        val value = if (lastRDM) remainingPoints else random.nextInt(0, remainingPoints + 1)
-        effect.RDM -= value
-        return value
-    }
-
-    /**
      * 判断是否满足条件
      */
-    private fun isConditionSatisfied(condition: String, userData: UserData): Boolean {
-        // 分割多个条件
-        val firstCondition = condition.split("|")
-//        println("firstCondition$firstCondition")
-        var anyTrue = false
-        var allFalse = true // 是否所有条件都为 false
-        for (f in firstCondition) {
-            val conditions = f.trim('"').replace("[()]".toRegex(), "").split("&")
-
-            for (c in conditions) {
-//                println("c$c")
-                // 找到操作符
-                val opIndex = c.indexOfAny(listOf("<", ">"))
-                if (opIndex != -1) {
-                    // 获取属性
-                    val prop = c.substring(0, opIndex)
-                    // 获取操作符
-                    val op = c[opIndex].toString()
-                    // 获取比较值
-                    val valueStr = c.substring(opIndex + 1)
-                    // 获取比较值
-                    val value = valueStr.toInt()
-                    val propValue =
-                        userData.javaClass.getDeclaredField(prop).apply { isAccessible = true }.get(userData).toString()
-                            .toInt()
-//                    println(propValue)
-//                    val propValue = userData::class.java.getDeclaredField(prop).also {
-//                        it.isAccessible = true
-//                    }.get(userData).toString().toInt()
-//                    val propValue =getattr
-
-                    when (op) {
-                        "<" -> if (propValue < value) {
-                            allFalse = false
-                            anyTrue = true
-                        } else allFalse = true
-                        ">" -> if (propValue > value) {
-                            allFalse = false
-                            anyTrue = true
-                        } else allFalse = true
-//                        else -> allFalse = true
+    private fun conditionEvt(condition: String, userData: UserData): Boolean {
+        val andList = arrayListOf<Boolean>()
+        val orList = arrayListOf<Boolean>()
+        for (cond in condition.split("|")) { // 先假设所有条件都不符合要求
+            val condList = cond.trim('"').replace("[()]".toRegex(), "").split("&")
+            for (c in condList) {
+                when {
+                    c.startsWith("AGE") -> {
+                        val (op, values) = getOpAndValues(c)
+                        val propValue = userData.AGE
+                        for (value in values) {
+                            if ((op == "?" && propValue > value.toInt()) || (op == "!" && propValue > value.toInt())) {
+                                andList.add(true)
+                            } else {
+                                andList.add(false)
+                            }
+                        }
                     }
-//                    value?.let { v ->
-//                        val propValue = userData::class.java.getDeclaredField(prop).also {
-//                            it.isAccessible = true
-//                        }.get(userData).toString().toInt()
-//                        when (op) {
-//                            "<" -> if (propValue >= v) allFalse = true
-//                            ">" -> if (propValue <= v) allFalse = true
-//                            else -> allFalse = true
-//                        }
-//                    }
-
-                } else {
-                    if (c.startsWith("AGE?")) {
-                        // 匹配 AGE?[70] 单数字的正则表达式
-                        val regex1 = Regex("AGE\\?\\[(\\d+)]")
-                        // 匹配 AGE?[70,80] 范围的正则表达式
-                        val regex2 = Regex("AGE\\?\\[(\\d+),(\\d+)]")
-
-                        val valid = regex1.matchEntire(c)?.groupValues?.get(1)?.toInt()?.let {
-                            userData.AGE >= it
-                        }
-                            ?: regex2.matchEntire(c)?.groupValues?.let { values ->
-                                Pair(values[1].toInt(), values[2].toInt())
-                            }?.let {
-                                userData.AGE in it.first..it.second
+                    c.startsWith("TLT") -> {
+                        val (op, values) = getOpAndValues(c)
+                        val tltList = arrayListOf<Boolean>()
+                        for (value in values) {
+                            if (op == "?" && userData.TLT!!.id.contains(value)) {
+                                tltList.add(true)
+                            } else if (op == "!" && userData.TLT!!.id.contains(value)) {
+                                tltList.add(false)
+                            } else {
+                                tltList.add(false)
                             }
-                            ?: false
-                        if (valid) {
-                            allFalse = false
-                            anyTrue = true
+                        }
+                        if (tltList.contains(true)) {
+                            andList.add(true)
                         } else {
-                            allFalse = true
+                            andList.add(false)
                         }
-                    } else if (c.startsWith("TLT?")) {
-                        val regex = Regex("\\[(.*?)]")
-                        val matchResult = regex.find(c)
-                        if (matchResult != null) {
-                            val valuesStr = matchResult.groupValues[1]
-                            val values = valuesStr.split(",").map { it }
-                            for (value in values) {
-                                if (userData.TLT!!.id.contains(value)) {
-                                    allFalse = false
-                                    anyTrue = true
-                                }
-                            }
-//                            allFalse = true
+                    }
+                    c.startsWith("EVT") -> {
+                        val (op, values) = getOpAndValues(c)
+                        val evtList = arrayListOf<Boolean>()
+                        val userEvents = arrayListOf<String>()
+                        userData.EVT.forEach { userEvt ->
+                            userEvents.add(userEvt.split(":")[0])
                         }
-                    } else if (c.trim('"').startsWith("EVT?")) {
-                        val regex = Regex("\\[(.*?)]")
-                        val matchResult = regex.find(c)
-                        if (matchResult != null) {
-                            val valuesStr = matchResult.groupValues[1]
-                            val values = valuesStr.split(",").map { it }
-//                        println(values)
-                            for (value in values) {
-//                                println(value)
-//                                println(userData.EVT)
-                                if (userData.EVT.contains(value)) {
-                                    allFalse = false
-                                    anyTrue = true
-                                }
+                        for (value in values) {
+                            if (op == "?" && userEvents.contains(value)) {
+                                evtList.add(true)
+                            } else if (op == "!" && userEvents.contains(value)) {
+                                evtList.add(false)
+                            } else {
+                                evtList.add(false)
                             }
-//                            allFalse = true
+                        }
+                        if (evtList.contains(true)) {
+                            andList.add(true)
+                        } else {
+                            andList.add(false)
+                        }
+                    }
+                }
+                val matchCondition = arrayOf("CHR", "INT", "STR", "MNY", "SPR", "LIF")
+                for (prefix in matchCondition) {
+                    if (c.startsWith(prefix)) {
+                        val (op, values) = getOpAndValues(c)
+                        val propValue = userData.run {
+                            javaClass.getDeclaredField(prefix).apply {
+                                isAccessible = true
+                            }.get(this).toString().toInt()
+                        }
+                        for (value in values) {
+                            if (compare(propValue, op, value.toInt())) {
+                                andList.add(true)
+                                break
+                            } else {
+                                andList.add(false)
+                                break
+                            }
                         }
                     }
                 }
             }
+            if (andList.contains(false)) {
+                orList.add(false)
+            } else {
+                orList.add(true)
+            }
         }
-        return if (firstCondition.size > 1) {
-            anyTrue
-        } else {
-            !allFalse
+
+        if (condition.split("|").size <= 1 && andList.contains(false)) {
+            return false
+        } else if (condition.split("|").size <= 1 && !andList.contains(false)) {
+            return true
+        } else if (condition.split("|").size > 1 && orList.contains(true)) {
+            return true
+        } else if (condition.split("|").size > 1 && !orList.contains(true)) {
+            return false
         }
-//        return true // 所有条件都满足
+        return false
     }
 
+    /**
+     * 从条件表达式中提取出比较操作符和元素值
+     * @param cond 条件表达式
+     * @return 返回<运算符,数值数组>键值对
+     */
+    private fun getOpAndValues(cond: String): Pair<String, List<String>> {
+        val opIndex = cond.indexOfAny(charArrayOf('<', '>', '?', '!'))
+        val op = if (opIndex == -1) "" else cond[opIndex].toString()
+        val valuesStr = Regex("\\[(.*?)]").find(cond)?.groupValues?.getOrNull(1) ?: ""
+        var values = valuesStr.split(",").map { it.trim() }
+        if (valuesStr.isBlank()) {
+            val noBracketRegex = Regex("-?\\d+") // 匹配没有中括号的条件
+            values = listOf(noBracketRegex.find(cond)?.value ?: "")
+        }
+        return Pair(op, values)
+    }
+
+    /**
+     * 简化比较操作符的判断逻辑
+     * @param val1 当前属性值
+     * @param op   运算符
+     * @param val2 目标值
+     * @return 返回布尔类型
+     */
+    private fun compare(val1: Int, op: String, val2: Int): Boolean {
+        return when (op) {
+            "<" -> val1 < val2
+            ">" -> val1 > val2
+            else -> false
+        }
+    }
+
+    /**
+     * 天赋条件判断
+     * @param random 随机函数
+     * @param userData 用户数据
+     * @return 改动后的用户数据
+     */
     private fun judgingCondition(random: Random, userData: UserData): UserData {
+        println("myTalent.condition:${myTalent.condition}")
         for (c in myTalent.condition) {
-//            println(c.second)
-//            println("isConditionSatisfied(c.second, userData)${isConditionSatisfied(c.second, userData)}")
-            if (isConditionSatisfied(c.second, userData)) {
-//                effect: Effect
-//                val jsonNode = File(talentPath).absoluteFile.readText()
+            if (conditionEvt(c.second, userData)) {
                 val jsonData = objectMapper.readTree(talentJson)
                 val effectData = jsonData[c.first]["effect"]
-//                println(effectData)
                 val effect = Effect(
                     CHR = effectData?.get("CHR")?.toString()?.toInt() ?: 0,
                     INT = effectData?.get("INT")?.toString()?.toInt() ?: 0,
@@ -297,12 +292,13 @@ class LifeRestart {
                     RDM = effectData?.get("RDM")?.toString()?.toInt() ?: 0,
                 )
                 // TODO 条件成立时删除此条天赋
+                val randomValue = generateRandomNumbers(5, effect.RDM)
                 return UserData(
-                    CHR = userData.CHR + effect.CHR + rdmValue(random, effect, false),
-                    INT = userData.INT + effect.INT + rdmValue(random, effect, false),
-                    STR = userData.STR + effect.STR + rdmValue(random, effect, false),
-                    MNY = userData.MNY + effect.MNY + rdmValue(random, effect, false),
-                    SPR = userData.SPR + effect.SPR + rdmValue(random, effect, true),
+                    CHR = userData.CHR + effect.CHR + randomValue[0],
+                    INT = userData.INT + effect.INT + randomValue[1],
+                    STR = userData.STR + effect.STR + randomValue[2],
+                    MNY = userData.MNY + effect.MNY + randomValue[3],
+                    SPR = userData.SPR + effect.SPR + randomValue[4],
                     LIF = userData.LIF + effect.LIF,
                     EVT = userData.EVT,
                     TMS = userData.TMS,
@@ -314,76 +310,126 @@ class LifeRestart {
         return userData
     }
 
+    /**
+     * 判断分支条件是否满足
+     * @param eventAll 随机事件的全部信息
+     * @param userData 用户数据
+     * @param randomAgeEvent 当前随机事件
+     */
+    private fun branchEvent(eventAll: JsonNode, userData: UserData, randomAgeEvent: String) {
+        val eventBranch = eventAll["branch"]
+        var addBool = true
+        eventBranch.forEach { branch ->
+            val branchSplit = branch.toString().trim('"').split(":")
+            val condition = branchSplit[0]
+            val event = branchSplit[1]
+            var ageEvent = randomAgeEvent
+            if (conditionEvt(condition, userData)) {
+                if (addBool) {
+                    userData.EVT.add("$ageEvent:B")
+                    addBool = false
+                }
+                val eventsEffect = eventsJson[event]["effect"]
+                if (eventsJson[event]["effect"] != null) {
+                    userData.CHR += eventsEffect["CHR"]?.toString()?.toInt() ?: 0
+                    userData.INT += eventsEffect["INT"]?.toString()?.toInt() ?: 0
+                    userData.STR += eventsEffect["STR"]?.toString()?.toInt() ?: 0
+                    userData.MNY += eventsEffect["MNY"]?.toString()?.toInt() ?: 0
+                    userData.SPR += eventsEffect["SPR"]?.toString()?.toInt() ?: 0
+                    userData.LIF += eventsEffect["LIF"]?.toString()?.toInt() ?: 0
+                }
+
+                if (eventsJson[event]["branch"] != null) {
+                    ageEvent = event
+                    branchEvent(eventsJson[ageEvent], userData, ageEvent)
+                }
+            } else {
+                if (addBool) {
+                    userData.EVT.add(randomAgeEvent)
+                    addBool = false
+                }
+            }
+        }
+        if (addBool) {
+            userData.EVT.add(randomAgeEvent)
+        }
+    }
+
+
+    /**
+     *
+     */
+    private fun shouldIncludeEvent(event: JsonNode, userData: UserData): Boolean {
+        val include = event["include"]?.toString() ?: ""
+        val exclude = event["exclude"]?.toString() ?: ""
+        return (include.isBlank() || conditionEvt(include, userData)) &&
+                (exclude.isBlank() || !conditionEvt(exclude, userData))
+    }
+
+    /**
+     * 使用递归使每次随机事件符合条件
+     */
+    private fun getRandomEvent(ageEvent: JsonNode, randomAgeEvent: String, userData: UserData): String {
+        var randomEvent = randomAgeEvent
+        val eventAll = eventsJson[randomEvent]
+        val includeEvent = shouldIncludeEvent(eventAll, userData)
+        return if (includeEvent) {
+            randomEvent
+        } else {
+            randomEvent = ageEvent[random.nextInt(0, ageEvent.size())].toString().split("*")[0].trim('"')
+            getRandomEvent(ageEvent, randomEvent, userData)
+        }
+    }
+
+    private fun generateRandomNumbers(count: Int, max: Int): List<Int> {
+        val randomNumbers = mutableListOf<Int>()
+        var remainingCount = count
+        var remainingMax = max
+        for (i in 1 until count) {
+            val randomMax = remainingMax / remainingCount * 2
+            val randomNumber = (1..randomMax).random()
+            randomNumbers.add(randomNumber)
+            remainingCount--
+            remainingMax -= randomNumber
+        }
+        randomNumbers.add(remainingMax)
+        if ((0..4).random() == 0) {
+            val randomIndex = (0 until count).random()
+            randomNumbers[randomIndex] += (1..remainingMax).random()
+        }
+        return randomNumbers
+    }
+
+
     fun startGame(): UserData {
         getTalent()
 
         val users = UserData()
-        users.STATES += myTalent.status
-//        println(users.STATES)
+        users.STATES += myTalent.status + myTalent.effect.RDM
+
+        val statesList = generateRandomNumbers(5, users.STATES)
         var userData = UserData(
-            CHR = assignValue(random, users, false) +
-                    myTalent.effect.CHR +
-                    rdmValue(random, myTalent.effect, false),
-            INT = assignValue(random, users, false) +
-                    myTalent.effect.INT +
-                    rdmValue(random, myTalent.effect, false),
-            STR = assignValue(random, users, false) +
-                    myTalent.effect.STR +
-                    rdmValue(random, myTalent.effect, false),
-            MNY = assignValue(random, users, false) +
-                    myTalent.effect.MNY +
-                    rdmValue(random, myTalent.effect, false),
-            SPR = assignValue(random, users, true) +
-                    myTalent.effect.SPR +
-                    rdmValue(random, myTalent.effect, false),
+            CHR = statesList[0] + myTalent.effect.CHR,
+            INT = statesList[1] + myTalent.effect.INT,
+            STR = statesList[2] + myTalent.effect.STR,
+            MNY = statesList[3] + myTalent.effect.MNY,
+            SPR = statesList[4] + myTalent.effect.SPR,
             LIF = 1 + myTalent.effect.LIF,
-            STATES = 20 + myTalent.effect.RDM
+            STATES = users.STATES
         )
-//        userData.TLT.addAll(myTalent.id)
 
-//        println(userData)
-//        println(userData.STATES)
-
-        if (myTalent.condition.size != 0) {
-//            println(myTalent.condition)
-            userData = judgingCondition(random, userData)
-        }
-
+        if (myTalent.condition.size != 0) userData = judgingCondition(random, userData)
         userData.TLT = myTalent
-
         return userData
-
     }
 
     fun nextGameStep(userData: UserData): UserData {
         val ageEvent = ageJson[userData.AGE.toString()]["event"]
         var randomAgeEvent = ageEvent[random.nextInt(0, ageEvent.size())].toString().split("*")[0].trim('"')
+
+        randomAgeEvent = getRandomEvent(ageEvent, randomAgeEvent, userData)
         val eventAll = eventsJson[randomAgeEvent]
-        var eventExclude = eventAll["exclude"]
-        var eventInclude = eventAll["include"]
-        while (true) {
-            if (eventExclude != null && eventInclude == null) {
-                if (!isConditionSatisfied(eventExclude.toString(), userData)) {
-                    break
-                }
-            } else if (eventInclude != null && eventExclude == null) {
-                if (isConditionSatisfied(eventInclude.toString(), userData)) {
-                    break
-                }
-            } else if (eventExclude != null) {
-                if (!isConditionSatisfied(eventExclude.toString(), userData) &&
-                    isConditionSatisfied(eventInclude.toString(), userData)
-                ) {
-                    break
-                }
-            } else {
-                break
-            }
-            randomAgeEvent = ageEvent[random.nextInt(0, ageEvent.size())].toString().split("*")[0].trim('"')
-            eventExclude = eventsJson[randomAgeEvent]["exclude"]
-            eventInclude = eventsJson[randomAgeEvent]["include"]
-        }
-        val eventsEffect = eventsJson[randomAgeEvent]["effect"]
+        val eventsEffect = eventAll["effect"]
         if (eventsEffect != null) {
             userData.CHR += eventsEffect["CHR"]?.toString()?.toInt() ?: 0
             userData.INT += eventsEffect["INT"]?.toString()?.toInt() ?: 0
@@ -392,9 +438,16 @@ class LifeRestart {
             userData.SPR += eventsEffect["SPR"]?.toString()?.toInt() ?: 0
             userData.LIF += eventsEffect["LIF"]?.toString()?.toInt() ?: 0
         }
-        userData.EVT.add(randomAgeEvent)
+
+
+        val eventBranch = eventAll["branch"]
+        if (eventBranch != null) {
+            branchEvent(eventAll, userData, randomAgeEvent)
+        } else {
+            userData.EVT.add(randomAgeEvent)
+        }
+
         userData.AGE += 1
-        println(userData)
         return userData
     }
 }
