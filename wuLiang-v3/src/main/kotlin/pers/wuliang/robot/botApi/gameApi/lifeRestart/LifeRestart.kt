@@ -6,7 +6,7 @@ import java.io.File
 import java.util.*
 
 /**
- *@Description:
+ *@Description: 人生重开模拟器的事件判定与数据处理
  *@Author zeng
  *@Date 2023/3/28 18:00
  *@User 86188
@@ -36,12 +36,12 @@ class LifeRestart {
     )
 
     data class Effect(
-        val CHR: Int = 0,// 颜值 charm CHR
-        val INT: Int = 0,// 智力 intelligence INT
-        val STR: Int = 0, // 体质 strength STR
-        val MNY: Int = 0, // 家境 money MNY
-        val SPR: Int = 0, // 快乐 spirit SPR
-        val LIF: Int = 0, // 生命 life LIFE
+        val CHR: Int = 0,
+        val INT: Int = 0,
+        val STR: Int = 0,
+        val MNY: Int = 0,
+        val SPR: Int = 0,
+        val LIF: Int = 0,
         var RDM: Int = 0,
     ) {
         operator fun plus(other: Effect): Effect {
@@ -78,6 +78,37 @@ class LifeRestart {
         var condition: ArrayList<Pair<String, String>> = arrayListOf(),
     )
 
+    /**
+     * 取得天赋的属性变化
+     * @param effectData 属性数据
+     * @return 返回改变后的数据类
+     */
+    private fun getEffect(effectData: JsonNode?): Effect {
+        return Effect(
+            CHR = effectData?.get("CHR")?.toString()?.toInt() ?: 0,
+            INT = effectData?.get("INT")?.toString()?.toInt() ?: 0,
+            STR = effectData?.get("STR")?.toString()?.toInt() ?: 0,
+            MNY = effectData?.get("MNY")?.toString()?.toInt() ?: 0,
+            SPR = effectData?.get("SPR")?.toString()?.toInt() ?: 0,
+            LIF = effectData?.get("LIF")?.toString()?.toInt() ?: 0,
+            RDM = effectData?.get("RDM")?.toString()?.toInt() ?: 0,
+        )
+    }
+
+    /**
+     * 改变用户属性
+     * @param userData 用户数据
+     * @param eventsEffect 获得的属性数据
+     */
+    private fun getUserDataEffect(userData: UserData, eventsEffect: JsonNode) {
+        userData.CHR += eventsEffect["CHR"]?.toString()?.toInt() ?: 0
+        userData.INT += eventsEffect["INT"]?.toString()?.toInt() ?: 0
+        userData.STR += eventsEffect["STR"]?.toString()?.toInt() ?: 0
+        userData.MNY += eventsEffect["MNY"]?.toString()?.toInt() ?: 0
+        userData.SPR += eventsEffect["SPR"]?.toString()?.toInt() ?: 0
+        userData.LIF += eventsEffect["LIF"]?.toString()?.toInt() ?: 0
+    }
+
 
     /**
      * 获取初始化天赋
@@ -87,16 +118,8 @@ class LifeRestart {
         val talents = map?.entries?.mapNotNull { entry ->
             val talentData = entry.value as? Map<*, *> ?: return@mapNotNull null
             val excludeList = talentData["exclude"] as? List<*>
-            val effectData = talentData["effect"] as? Map<*, *>
-            val effect = Effect(
-                CHR = effectData?.get("CHR")?.toString()?.toInt() ?: 0,
-                INT = effectData?.get("INT")?.toString()?.toInt() ?: 0,
-                STR = effectData?.get("STR")?.toString()?.toInt() ?: 0,
-                MNY = effectData?.get("MNY")?.toString()?.toInt() ?: 0,
-                SPR = effectData?.get("SPR")?.toString()?.toInt() ?: 0,
-                LIF = effectData?.get("LIF")?.toString()?.toInt() ?: 0,
-                RDM = effectData?.get("RDM")?.toString()?.toInt() ?: 0,
-            )
+            val effectData = talentData["effect"] as? JsonNode
+            val effect = getEffect(effectData)
             val excludes = excludeList?.toSet() ?: emptySet()
             // 判断 condition 是否存在，存在则存储到 Talent 中
             val id = entry.key.toString()
@@ -137,7 +160,10 @@ class LifeRestart {
     }
 
     /**
-     * 判断是否满足条件
+     * 判断事件是否满足条件
+     * @param condition 条件
+     * @param userData 用户数据
+     * @return 返回布尔类型判断结果
      */
     private fun conditionEvt(condition: String, userData: UserData): Boolean {
         val andList = arrayListOf<Boolean>()
@@ -272,27 +298,17 @@ class LifeRestart {
 
     /**
      * 天赋条件判断
-     * @param random 随机函数
      * @param userData 用户数据
      * @return 改动后的用户数据
      */
-    private fun judgingCondition(random: Random, userData: UserData): UserData {
-        println("myTalent.condition:${myTalent.condition}")
+    private fun judgingCondition(userData: UserData): UserData {
         for (c in myTalent.condition) {
             if (conditionEvt(c.second, userData)) {
                 val jsonData = objectMapper.readTree(talentJson)
                 val effectData = jsonData[c.first]["effect"]
-                val effect = Effect(
-                    CHR = effectData?.get("CHR")?.toString()?.toInt() ?: 0,
-                    INT = effectData?.get("INT")?.toString()?.toInt() ?: 0,
-                    STR = effectData?.get("STR")?.toString()?.toInt() ?: 0,
-                    MNY = effectData?.get("MNY")?.toString()?.toInt() ?: 0,
-                    SPR = effectData?.get("SPR")?.toString()?.toInt() ?: 0,
-                    LIF = effectData?.get("LIF")?.toString()?.toInt() ?: 0,
-                    RDM = effectData?.get("RDM")?.toString()?.toInt() ?: 0,
-                )
+                val effect = getEffect(effectData)
                 // TODO 条件成立时删除此条天赋
-                val randomValue = generateRandomNumbers(5, effect.RDM)
+                val randomValue = generateRandomNumbers(effect.RDM)
                 return UserData(
                     CHR = userData.CHR + effect.CHR + randomValue[0],
                     INT = userData.INT + effect.INT + randomValue[1],
@@ -331,12 +347,7 @@ class LifeRestart {
                 }
                 val eventsEffect = eventsJson[event]["effect"]
                 if (eventsJson[event]["effect"] != null) {
-                    userData.CHR += eventsEffect["CHR"]?.toString()?.toInt() ?: 0
-                    userData.INT += eventsEffect["INT"]?.toString()?.toInt() ?: 0
-                    userData.STR += eventsEffect["STR"]?.toString()?.toInt() ?: 0
-                    userData.MNY += eventsEffect["MNY"]?.toString()?.toInt() ?: 0
-                    userData.SPR += eventsEffect["SPR"]?.toString()?.toInt() ?: 0
-                    userData.LIF += eventsEffect["LIF"]?.toString()?.toInt() ?: 0
+                    getUserDataEffect(userData, eventsEffect)
                 }
 
                 if (eventsJson[event]["branch"] != null) {
@@ -357,7 +368,10 @@ class LifeRestart {
 
 
     /**
-     *
+     *判断分支事件是否可行
+     * @param event 事件JSON
+     * @param userData 用户数据
+     * @return 布尔类型的判断结果
      */
     private fun shouldIncludeEvent(event: JsonNode, userData: UserData): Boolean {
         val include = event["include"]?.toString() ?: ""
@@ -368,6 +382,10 @@ class LifeRestart {
 
     /**
      * 使用递归使每次随机事件符合条件
+     * @param ageEvent 当前年龄总事件
+     * @param randomAgeEvent 当前年龄随机事件
+     * @param userData 用户数据
+     * @return 返回String类型的选中的事件
      */
     private fun getRandomEvent(ageEvent: JsonNode, randomAgeEvent: String, userData: UserData): String {
         var randomEvent = randomAgeEvent
@@ -381,13 +399,18 @@ class LifeRestart {
         }
     }
 
-    private fun generateRandomNumbers(count: Int, max: Int): List<Int> {
+    /**
+     * 属性数组随机生成
+     * @param max 属性总数
+     */
+    private fun generateRandomNumbers(max: Int): List<Int> {
+        val count = 5
         val randomNumbers = mutableListOf<Int>()
         var remainingCount = count
         var remainingMax = max
         for (i in 1 until count) {
             val randomMax = remainingMax / remainingCount * 2
-            val randomNumber = (1..randomMax).random()
+            val randomNumber = (0..randomMax).random()
             randomNumbers.add(randomNumber)
             remainingCount--
             remainingMax -= randomNumber
@@ -401,13 +424,17 @@ class LifeRestart {
     }
 
 
+    /**
+     * 开始游戏
+     * @return 返回角色数据
+     */
     fun startGame(): UserData {
         getTalent()
 
         val users = UserData()
         users.STATES += myTalent.status + myTalent.effect.RDM
 
-        val statesList = generateRandomNumbers(5, users.STATES)
+        val statesList = generateRandomNumbers(users.STATES)
         var userData = UserData(
             CHR = statesList[0] + myTalent.effect.CHR,
             INT = statesList[1] + myTalent.effect.INT,
@@ -418,11 +445,55 @@ class LifeRestart {
             STATES = users.STATES
         )
 
-        if (myTalent.condition.size != 0) userData = judgingCondition(random, userData)
+        if (myTalent.condition.size != 0) userData = judgingCondition(userData)
         userData.TLT = myTalent
         return userData
     }
 
+    /**
+     * 开始游戏-属性自定义模式
+     * @return 返回角色数据
+     */
+    fun startGameChoiceTalent(): UserData {
+        getTalent()
+
+        val users = UserData()
+        users.STATES += myTalent.status + myTalent.effect.RDM
+        var userData = UserData(
+            CHR = myTalent.effect.CHR,
+            INT = myTalent.effect.INT,
+            STR = myTalent.effect.STR,
+            MNY = myTalent.effect.MNY,
+            SPR = myTalent.effect.SPR,
+            LIF = 1 + myTalent.effect.LIF,
+            STATES = users.STATES
+        )
+
+        if (myTalent.condition.size != 0) userData = judgingCondition(userData)
+        userData.TLT = myTalent
+        return userData
+    }
+
+    /**
+     * 选择模式自定义属性
+     * @param attList 属性数组
+     * @param userData 用户数据
+     * @return 修改后的用户数据
+     */
+    fun choiceModelAtt(attList: ArrayList<Int?>, userData: UserData): UserData {
+        userData.CHR += attList[0]!!
+        userData.INT += attList[1]!!
+        userData.STR += attList[2]!!
+        userData.MNY += attList[3]!!
+        userData.SPR += attList[4]!!
+        return userData
+    }
+
+    /**
+     * 下一步方法
+     * @param userData 用户数据
+     * @return 返回角色数据
+     */
     fun nextGameStep(userData: UserData): UserData {
         val ageEvent = ageJson[userData.AGE.toString()]["event"]
         var randomAgeEvent = ageEvent[random.nextInt(0, ageEvent.size())].toString().split("*")[0].trim('"')
@@ -431,14 +502,8 @@ class LifeRestart {
         val eventAll = eventsJson[randomAgeEvent]
         val eventsEffect = eventAll["effect"]
         if (eventsEffect != null) {
-            userData.CHR += eventsEffect["CHR"]?.toString()?.toInt() ?: 0
-            userData.INT += eventsEffect["INT"]?.toString()?.toInt() ?: 0
-            userData.STR += eventsEffect["STR"]?.toString()?.toInt() ?: 0
-            userData.MNY += eventsEffect["MNY"]?.toString()?.toInt() ?: 0
-            userData.SPR += eventsEffect["SPR"]?.toString()?.toInt() ?: 0
-            userData.LIF += eventsEffect["LIF"]?.toString()?.toInt() ?: 0
+            getUserDataEffect(userData, eventsEffect)
         }
-
 
         val eventBranch = eventAll["branch"]
         if (eventBranch != null) {
